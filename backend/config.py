@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     # ── Expo Push ────────────────────────────────────────────
     expo_access_token: str = ""
 
+    # ── Admin ────────────────────────────────────────────────
+    admin_secret_key: str = "dev-admin-key"
+
     # ── Storage ──────────────────────────────────────────────
     storage_bucket_agent_docs: str = "agent-docs"
 
