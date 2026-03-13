@@ -1,6 +1,12 @@
-# TODO: Configurar middleware CORS, lifespan events y montaje de routers
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s: %(name)s — %(message)s",
+)
 
 from config import settings
 from routers import auth, agents, services, payments, messages, reviews

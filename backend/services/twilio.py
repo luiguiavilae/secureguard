@@ -1,13 +1,41 @@
-# TODO: Implementar servicio Twilio Verify para envío y verificación de OTP
-# Funciones: send_otp(phone: str), verify_otp(phone: str, code: str) -> bool
-from twilio.rest import Client
+import logging
+
 from config import settings
 
-_client: Client | None = None
+logger = logging.getLogger(__name__)
 
 
-def get_twilio() -> Client:
-    global _client
-    if _client is None:
-        _client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
-    return _client
+def send_sms(to: str, message: str) -> bool:
+    """
+    Envía un SMS al número indicado.
+
+    En modo mock (sin credenciales reales) loggea el mensaje en consola
+    y retorna True para no bloquear el flujo de desarrollo.
+
+    Retorna True si el envío fue exitoso (o simulado), False si hubo error real.
+    """
+    # Normalizar: asegurar prefijo +51 para números peruanos
+    if not to.startswith("+"):
+        to = f"+51{to}"
+
+    if settings.is_mock_twilio:
+        logger.info(
+            "[MOCK SMS] *** Credenciales Twilio no configuradas — "
+            f"simulando envío a {to} | Mensaje: {message}"
+        )
+        return True
+
+    try:
+        from twilio.rest import Client as TwilioClient
+
+        client = TwilioClient(settings.twilio_account_sid, settings.twilio_auth_token)
+        msg = client.messages.create(
+            body=message,
+            from_=settings.twilio_from_number,
+            to=to,
+        )
+        logger.info(f"SMS enviado a {to} | SID: {msg.sid}")
+        return True
+    except Exception as exc:
+        logger.error(f"Error enviando SMS a {to}: {exc}")
+        return False
