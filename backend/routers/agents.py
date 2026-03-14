@@ -427,6 +427,37 @@ async def get_agent_profile(
     )
 
 
+@router.post("/{agent_id}/evaluate-badges", status_code=status.HTTP_200_OK)
+async def evaluate_agent_badges(
+    agent_id: str,
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    """
+    Evalúa y otorga badges al agente según sus estadísticas actuales.
+    Recalcula la comisión. Retorna badges nuevos obtenidos y comisión vigente.
+    """
+    logger.info(f"Evaluate badges para agente {agent_id} por user {current_user.user_id}")
+
+    try:
+        db = get_supabase()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
+
+    from services.badges import evaluate_badges
+
+    try:
+        result = evaluate_badges(agent_id=agent_id, db=db)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+
+    return {
+        "agent_id": agent_id,
+        "badges_nuevos": result["badges_nuevos"],
+        "nueva_comision": result["nueva_comision"],
+        "badges_totales": result["badges_totales"],
+    }
+
+
 @router.patch("/{agent_id}/availability", status_code=status.HTTP_200_OK)
 async def update_availability(
     agent_id: str,
