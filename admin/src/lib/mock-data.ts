@@ -600,6 +600,340 @@ export const mockDisputasDetalle: Record<string, MockDisputaDetalle> = {
   },
 };
 
+// ─── Clientes ─────────────────────────────────────────────────────────────────
+
+export type ClienteNivel = 'PREMIUM' | 'REGULAR' | 'NUEVO' | 'OBSERVADO' | 'BLOQUEADO';
+export type ClienteEstado = 'ACTIVO' | 'SUSPENDIDO' | 'BLOQUEADO';
+
+export interface ClienteScoreMovimiento {
+  fecha: string;
+  delta: number;
+  score_resultante: number;
+  motivo: string;
+}
+
+export interface ClienteCancelacion {
+  fecha: string;
+  servicio_id: string;
+  motivo: string;
+  penalizacion: number;
+}
+
+export interface ClienteServicioHistorial {
+  id: string;
+  tipo: string;
+  estado: string;
+  distrito: string;
+  agente_nombre: string | null;
+  monto: number;
+  fecha: string;
+}
+
+export interface MockCliente {
+  id: string;
+  nombre: string;
+  dni: string;
+  telefono: string;
+  email: string;
+  score: number;
+  nivel: ClienteNivel;
+  estado: ClienteEstado;
+  servicios_solicitados: number;
+  cancelaciones_mes: number;
+  created_at: string;
+  distrito: string;
+  score_history: ClienteScoreMovimiento[];
+  cancelaciones: ClienteCancelacion[];
+  servicios: ClienteServicioHistorial[];
+  irregularidades: string[];
+}
+
+export const mockClientes: MockCliente[] = [
+  {
+    id: 'cli-001',
+    nombre: 'Ana García Torres',
+    dni: '10234567',
+    telefono: '+51 987 111 222',
+    email: 'ana.garcia@gmail.com',
+    score: 92,
+    nivel: 'PREMIUM',
+    estado: 'ACTIVO',
+    servicios_solicitados: 24,
+    cancelaciones_mes: 0,
+    created_at: hoursAgo(2160),
+    distrito: 'Miraflores',
+    score_history: [
+      { fecha: hoursAgo(48), delta: 5, score_resultante: 92, motivo: 'SERVICIO_COMPLETADO_5_ESTRELLAS' },
+      { fecha: hoursAgo(200), delta: 5, score_resultante: 87, motivo: 'SERVICIO_COMPLETADO' },
+    ],
+    cancelaciones: [],
+    servicios: [
+      { id: 'SRV-001', tipo: 'Seguridad residencial', estado: 'EN_CURSO', distrito: 'Miraflores', agente_nombre: 'Pedro Sánchez López', monto: 480, fecha: hoursAgo(2) },
+      { id: 'SRV-005', tipo: 'Seguridad residencial', estado: 'COMPLETADO', distrito: 'Surco', agente_nombre: 'Marco Lazo Herrera', monto: 480, fecha: hoursAgo(240) },
+    ],
+    irregularidades: [],
+  },
+  {
+    id: 'cli-002',
+    nombre: 'Banco Continental SAC',
+    dni: '20100453012',
+    telefono: '+51 01 211-9999',
+    email: 'seguridad@bcp.com.pe',
+    score: 98,
+    nivel: 'PREMIUM',
+    estado: 'ACTIVO',
+    servicios_solicitados: 87,
+    cancelaciones_mes: 0,
+    created_at: hoursAgo(8760),
+    distrito: 'San Isidro',
+    score_history: [
+      { fecha: hoursAgo(24), delta: 2, score_resultante: 98, motivo: 'SERVICIO_COMPLETADO' },
+    ],
+    cancelaciones: [],
+    servicios: [
+      { id: 'SRV-002', tipo: 'Evento privado', estado: 'EN_CURSO', distrito: 'San Isidro', agente_nombre: 'José Quispe Mamani', monto: 840, fecha: hoursAgo(1) },
+    ],
+    irregularidades: ['Disputa activa DIS-005 por requisitos de acceso'],
+  },
+  {
+    id: 'cli-003',
+    nombre: 'Ricardo Vega Palomino',
+    dni: '41987654',
+    telefono: '+51 956 334 112',
+    email: 'r.vega@gmail.com',
+    score: 55,
+    nivel: 'OBSERVADO',
+    estado: 'ACTIVO',
+    servicios_solicitados: 4,
+    cancelaciones_mes: 1,
+    created_at: hoursAgo(720),
+    distrito: 'Barranco',
+    score_history: [
+      { fecha: hoursAgo(1), delta: -20, score_resultante: 55, motivo: 'DISPUTA_RESUELTA_CONTRA_CLIENTE' },
+      { fecha: hoursAgo(500), delta: 5, score_resultante: 75, motivo: 'SERVICIO_COMPLETADO' },
+    ],
+    cancelaciones: [
+      { fecha: hoursAgo(72), servicio_id: 'SRV-080', motivo: 'Cambio de planes', penalizacion: 15 },
+    ],
+    servicios: [
+      { id: 'SRV-003', tipo: 'Protección personal', estado: 'EN_CURSO', distrito: 'Barranco', agente_nombre: 'Antonio Flores Ríos', monto: 390, fecha: hoursAgo(3) },
+    ],
+    irregularidades: ['Disputa DIS-004 por pago no realizado'],
+  },
+  {
+    id: 'cli-004',
+    nombre: 'Tech Solutions Perú',
+    dni: '20521398745',
+    telefono: '+51 01 445-7700',
+    email: 'admin@techsolutions.pe',
+    score: 78,
+    nivel: 'REGULAR',
+    estado: 'ACTIVO',
+    servicios_solicitados: 12,
+    cancelaciones_mes: 2,
+    created_at: hoursAgo(1440),
+    distrito: 'La Molina',
+    score_history: [
+      { fecha: hoursAgo(120), delta: -10, score_resultante: 78, motivo: 'CANCELACION_TARDIA_CLIENTE' },
+      { fecha: hoursAgo(300), delta: 5, score_resultante: 88, motivo: 'SERVICIO_COMPLETADO' },
+    ],
+    cancelaciones: [
+      { fecha: hoursAgo(120), servicio_id: 'SRV-075', motivo: 'Presupuesto reducido', penalizacion: 15 },
+      { fecha: hoursAgo(480), servicio_id: 'SRV-060', motivo: 'Fecha incorrecta', penalizacion: 0 },
+    ],
+    servicios: [
+      { id: 'SRV-004', tipo: 'Seguridad corporativa', estado: 'PENDIENTE', distrito: 'La Molina', agente_nombre: null, monto: 700, fecha: hoursAgo(-2) },
+    ],
+    irregularidades: [],
+  },
+  {
+    id: 'cli-005',
+    nombre: 'Patricia Quispe López',
+    dni: '43210876',
+    telefono: '+51 987 345 678',
+    email: 'patricia.quispe@outlook.com',
+    score: 82,
+    nivel: 'REGULAR',
+    estado: 'ACTIVO',
+    servicios_solicitados: 7,
+    cancelaciones_mes: 0,
+    created_at: hoursAgo(2880),
+    distrito: 'Surco',
+    score_history: [
+      { fecha: hoursAgo(240), delta: 5, score_resultante: 82, motivo: 'SERVICIO_COMPLETADO' },
+    ],
+    cancelaciones: [],
+    servicios: [
+      { id: 'SRV-005', tipo: 'Seguridad residencial', estado: 'COMPLETADO', distrito: 'Surco', agente_nombre: 'Marco Lazo Herrera', monto: 480, fecha: hoursAgo(10) },
+    ],
+    irregularidades: ['Disputa DIS-002 por conducta inapropiada de agente'],
+  },
+  {
+    id: 'cli-006',
+    nombre: 'Mónica Lara Espinoza',
+    dni: '45678234',
+    telefono: '+51 965 432 109',
+    email: 'monica.lara@yahoo.com',
+    score: 40,
+    nivel: 'OBSERVADO',
+    estado: 'SUSPENDIDO',
+    servicios_solicitados: 3,
+    cancelaciones_mes: 3,
+    created_at: hoursAgo(360),
+    distrito: 'Jesús María',
+    score_history: [
+      { fecha: hoursAgo(5), delta: -30, score_resultante: 40, motivo: 'MULTIPLES_CANCELACIONES' },
+    ],
+    cancelaciones: [
+      { fecha: hoursAgo(5), servicio_id: 'SRV-008', motivo: 'Sin motivo declarado', penalizacion: 15 },
+      { fecha: hoursAgo(48), servicio_id: 'SRV-070', motivo: 'Cambio de planes', penalizacion: 15 },
+      { fecha: hoursAgo(120), servicio_id: 'SRV-065', motivo: 'Presupuesto', penalizacion: 0 },
+    ],
+    servicios: [
+      { id: 'SRV-008', tipo: 'Seguridad residencial', estado: 'CANCELADO', distrito: 'Jesús María', agente_nombre: null, monto: 480, fecha: hoursAgo(5) },
+    ],
+    irregularidades: ['3 cancelaciones en el mes — suspensión preventiva'],
+  },
+  {
+    id: 'cli-007',
+    nombre: 'Fernando Díaz Roca',
+    dni: '46543210',
+    telefono: '+51 912 223 334',
+    email: 'fdiaz@empresa.com',
+    score: 88,
+    nivel: 'REGULAR',
+    estado: 'ACTIVO',
+    servicios_solicitados: 9,
+    cancelaciones_mes: 0,
+    created_at: hoursAgo(1800),
+    distrito: 'San Borja',
+    score_history: [
+      { fecha: hoursAgo(8), delta: 5, score_resultante: 88, motivo: 'SERVICIO_COMPLETADO_5_ESTRELLAS' },
+    ],
+    cancelaciones: [],
+    servicios: [
+      { id: 'SRV-007', tipo: 'Protección personal', estado: 'EN_CURSO', distrito: 'San Borja', agente_nombre: 'Luis Ccama Huanca', monto: 260, fecha: hoursAgo(1) },
+    ],
+    irregularidades: [],
+  },
+  {
+    id: 'cli-008',
+    nombre: 'Grupo Romero SA',
+    dni: '20100234567',
+    telefono: '+51 01 612-3000',
+    email: 'seguridad@gruporomero.com.pe',
+    score: 95,
+    nivel: 'PREMIUM',
+    estado: 'ACTIVO',
+    servicios_solicitados: 45,
+    cancelaciones_mes: 0,
+    created_at: hoursAgo(17520),
+    distrito: 'San Isidro',
+    score_history: [
+      { fecha: hoursAgo(4), delta: 3, score_resultante: 95, motivo: 'SERVICIO_COMPLETADO' },
+    ],
+    cancelaciones: [],
+    servicios: [
+      { id: 'SRV-009', tipo: 'Seguridad corporativa', estado: 'EN_CURSO', distrito: 'San Isidro', agente_nombre: 'Hugo Benites Tapia', monto: 960, fecha: hoursAgo(4) },
+    ],
+    irregularidades: [],
+  },
+];
+
+// ─── Finanzas — Transacciones ─────────────────────────────────────────────────
+
+export type TransaccionMetodo = 'STRIPE_TEST' | 'YAPE_MANUAL' | 'STRIPE_LIVE';
+export type TransaccionEstado = 'PAGADO' | 'PENDIENTE' | 'REEMBOLSADO' | 'FALLIDO';
+
+export interface MockTransaccion {
+  id: string;
+  fecha: string;
+  servicio_id: string;
+  cliente_nombre: string;
+  agente_nombre: string;
+  monto: number;
+  metodo: TransaccionMetodo;
+  estado: TransaccionEstado;
+}
+
+export const mockTransacciones: MockTransaccion[] = [
+  { id: 'TXN-001', fecha: hoursAgo(2), servicio_id: 'SRV-001', cliente_nombre: 'Ana García Torres', agente_nombre: 'Pedro Sánchez López', monto: 480, metodo: 'STRIPE_TEST', estado: 'PAGADO' },
+  { id: 'TXN-002', fecha: hoursAgo(1), servicio_id: 'SRV-002', cliente_nombre: 'Banco Continental SAC', agente_nombre: 'José Quispe Mamani', monto: 840, metodo: 'YAPE_MANUAL', estado: 'PENDIENTE' },
+  { id: 'TXN-003', fecha: hoursAgo(3), servicio_id: 'SRV-003', cliente_nombre: 'Ricardo Vega Palomino', agente_nombre: 'Antonio Flores Ríos', monto: 390, metodo: 'STRIPE_TEST', estado: 'PAGADO' },
+  { id: 'TXN-004', fecha: hoursAgo(10), servicio_id: 'SRV-005', cliente_nombre: 'Patricia Quispe López', agente_nombre: 'Marco Lazo Herrera', monto: 480, metodo: 'YAPE_MANUAL', estado: 'PAGADO' },
+  { id: 'TXN-005', fecha: hoursAgo(8), servicio_id: 'SRV-006', cliente_nombre: 'Consultora Andina SAC', agente_nombre: 'Raúl Condori Puma', monto: 390, metodo: 'STRIPE_TEST', estado: 'REEMBOLSADO' },
+  { id: 'TXN-006', fecha: hoursAgo(1), servicio_id: 'SRV-007', cliente_nombre: 'Fernando Díaz Roca', agente_nombre: 'Luis Ccama Huanca', monto: 260, metodo: 'YAPE_MANUAL', estado: 'PAGADO' },
+  { id: 'TXN-007', fecha: hoursAgo(5), servicio_id: 'SRV-008', cliente_nombre: 'Mónica Lara Espinoza', agente_nombre: '—', monto: 480, metodo: 'STRIPE_TEST', estado: 'REEMBOLSADO' },
+  { id: 'TXN-008', fecha: hoursAgo(4), servicio_id: 'SRV-009', cliente_nombre: 'Grupo Romero SA', agente_nombre: 'Hugo Benites Tapia', monto: 960, metodo: 'YAPE_MANUAL', estado: 'PAGADO' },
+  { id: 'TXN-009', fecha: hoursAgo(24), servicio_id: 'SRV-010', cliente_nombre: 'Municipalidad de Chorrillos', agente_nombre: 'Ernesto Vidal Cruz', monto: 520, metodo: 'STRIPE_TEST', estado: 'PENDIENTE' },
+  { id: 'TXN-010', fecha: hoursAgo(48), servicio_id: 'SRV-011', cliente_nombre: 'Ana García Torres', agente_nombre: 'Pedro Sánchez López', monto: 300, metodo: 'STRIPE_TEST', estado: 'PAGADO' },
+  { id: 'TXN-011', fecha: hoursAgo(72), servicio_id: 'SRV-012', cliente_nombre: 'Tech Solutions Perú', agente_nombre: 'Marco Lazo Herrera', monto: 700, metodo: 'YAPE_MANUAL', estado: 'PAGADO' },
+  { id: 'TXN-012', fecha: hoursAgo(96), servicio_id: 'SRV-013', cliente_nombre: 'Grupo Romero SA', agente_nombre: 'Hugo Benites Tapia', monto: 1200, metodo: 'STRIPE_TEST', estado: 'PAGADO' },
+];
+
+// ─── Finanzas — Pagos pendientes a agentes ────────────────────────────────────
+
+export interface MockPayoutPendiente {
+  id: string;
+  agente_nombre: string;
+  agente_id: string;
+  servicios_completados: number;
+  monto_bruto: number;
+  retencion_ir: number;   // 8%
+  monto_neto: number;
+  pagado: boolean;
+}
+
+export const mockPayoutsPendientes: MockPayoutPendiente[] = [
+  {
+    id: 'PAY-001', agente_id: 'av-001', agente_nombre: 'Pedro Sánchez López',
+    servicios_completados: 3, monto_bruto: 1152, retencion_ir: 92.16, monto_neto: 1059.84, pagado: false,
+  },
+  {
+    id: 'PAY-002', agente_id: 'av-002', agente_nombre: 'Antonio Flores Ríos',
+    servicios_completados: 2, monto_bruto: 624, retencion_ir: 49.92, monto_neto: 574.08, pagado: false,
+  },
+  {
+    id: 'PAY-003', agente_id: 'av-005', agente_nombre: 'Hugo Benites Tapia',
+    servicios_completados: 4, monto_bruto: 1728, retencion_ir: 138.24, monto_neto: 1589.76, pagado: false,
+  },
+  {
+    id: 'PAY-004', agente_id: 'av-003', agente_nombre: 'Marco Lazo Herrera',
+    servicios_completados: 2, monto_bruto: 768, retencion_ir: 61.44, monto_neto: 706.56, pagado: false,
+  },
+  {
+    id: 'PAY-005', agente_id: 'av-006', agente_nombre: 'Ernesto Vidal Cruz',
+    servicios_completados: 1, monto_bruto: 416, retencion_ir: 33.28, monto_neto: 382.72, pagado: false,
+  },
+];
+
+// ─── Finanzas — Fondo de seguro ───────────────────────────────────────────────
+
+export interface FondoMovimiento {
+  id: string;
+  fecha: string;
+  tipo: 'ACUMULACION' | 'COMPENSACION';
+  descripcion: string;
+  monto: number;
+  balance_resultante: number;
+}
+
+export const FONDO_SEGURO_BALANCE = 2450;
+export const FONDO_SEGURO_ALERTA_MIN = 500;
+
+export const mockFondoMovimientos: FondoMovimiento[] = [
+  { id: 'FM-001', fecha: hoursAgo(2), tipo: 'ACUMULACION', descripcion: 'Fondo por SRV-001 (S/480)', monto: 10, balance_resultante: 2450 },
+  { id: 'FM-002', fecha: hoursAgo(1), tipo: 'ACUMULACION', descripcion: 'Fondo por SRV-002 (S/840)', monto: 10, balance_resultante: 2440 },
+  { id: 'FM-003', fecha: hoursAgo(3), tipo: 'ACUMULACION', descripcion: 'Fondo por SRV-003 (S/390)', monto: 10, balance_resultante: 2430 },
+  { id: 'FM-004', fecha: hoursAgo(8), tipo: 'COMPENSACION', descripcion: 'Compensación DIS-003 — reembolso 50% SRV-006', monto: -195, balance_resultante: 2420 },
+  { id: 'FM-005', fecha: hoursAgo(10), tipo: 'ACUMULACION', descripcion: 'Fondo por SRV-005 (S/480)', monto: 10, balance_resultante: 2615 },
+  { id: 'FM-006', fecha: hoursAgo(24), tipo: 'COMPENSACION', descripcion: 'Compensación DIS-001 — reembolso parcial SRV-010', monto: -260, balance_resultante: 2605 },
+  { id: 'FM-007', fecha: hoursAgo(30), tipo: 'ACUMULACION', descripcion: 'Fondo por SRV-009 (S/960)', monto: 10, balance_resultante: 2865 },
+  { id: 'FM-008', fecha: hoursAgo(48), tipo: 'ACUMULACION', descripcion: 'Fondo por SRV-011 (S/300)', monto: 10, balance_resultante: 2855 },
+  { id: 'FM-009', fecha: hoursAgo(72), tipo: 'ACUMULACION', descripcion: 'Fondo por SRV-012 (S/700)', monto: 10, balance_resultante: 2845 },
+  { id: 'FM-010', fecha: hoursAgo(96), tipo: 'ACUMULACION', descripcion: 'Fondo por SRV-013 (S/1200)', monto: 10, balance_resultante: 2835 },
+];
+
 // ─── Agentes verificados con score, badges y nivel ───────────────────────────
 
 export type NivelScore = 'CONFIABLE' | 'REGULAR' | 'OBSERVADO' | 'RESTRINGIDO' | 'BLOQUEADO';

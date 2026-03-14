@@ -365,11 +365,18 @@ class TestFlujoB:
     def test_agent_apply_open_service_becomes_en_revision(self):
         db, q = _build_db_mock()
         svc = _svc(estado="ABIERTA", agente_seleccionado_id=None)
+        # Sequence (single agent Flujo B):
+        # 1. get service, 2. check existing agent (none), 3. insert service_agents,
+        # 4. update service EN_REVISION, 5. get accepted agents (for leader),
+        # 6. update leader, 7. log event
         q.execute.side_effect = [
-            MagicMock(data=[svc]),
-            MagicMock(data=[svc]),
-            MagicMock(data=[{}]),
-            MagicMock(data=[{}]),
+            MagicMock(data=[svc]),                       # get service
+            MagicMock(data=[]),                          # check existing (none)
+            MagicMock(data=[{}]),                        # insert service_agents
+            MagicMock(data=[svc]),                       # update service
+            MagicMock(data=[{"agente_id": "agente-001"}]),  # get accepted agents
+            MagicMock(data=[{}]),                        # update leader
+            MagicMock(data=[{}]),                        # log event
         ]
         with patch("routers.services.get_supabase", return_value=db):
             resp = client.post(
@@ -430,13 +437,16 @@ class TestFlujoB:
             create_resp = client.post("/services/", headers=CLIENT_HEADERS, json=_CREATE_BODY)
         assert create_resp.status_code == 201
 
-        # 2. Agent applies
+        # 2. Agent applies (single-agent Flujo B → EN_REVISION directo)
         svc_abierta = _svc(estado="ABIERTA", agente_seleccionado_id=None)
         q.execute.side_effect = [
-            MagicMock(data=[svc_abierta]),
-            MagicMock(data=[svc_abierta]),
-            MagicMock(data=[{}]),
-            MagicMock(data=[{}]),
+            MagicMock(data=[svc_abierta]),                       # get service
+            MagicMock(data=[]),                                  # check existing (none)
+            MagicMock(data=[{}]),                                # insert service_agents
+            MagicMock(data=[svc_abierta]),                       # update service
+            MagicMock(data=[{"agente_id": "agente-001"}]),       # get accepted agents
+            MagicMock(data=[{}]),                                # update leader
+            MagicMock(data=[{}]),                                # log event
         ]
         with patch("routers.services.get_supabase", return_value=db):
             apply_resp = client.post(
