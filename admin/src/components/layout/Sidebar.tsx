@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   LogOut,
+  ClipboardList,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -59,6 +60,11 @@ const NAV_ITEMS: NavItem[] = [
     href: '/clientes',
     label: 'Clientes',
     icon: <Users className="h-4 w-4" />,
+  },
+  {
+    href: '/audit',
+    label: 'Audit Log',
+    icon: <ClipboardList className="h-4 w-4" />,
   },
   {
     href: '/configuracion',

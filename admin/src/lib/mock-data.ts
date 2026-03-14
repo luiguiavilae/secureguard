@@ -1086,3 +1086,181 @@ export const mockAgentesVerificados: MockAgenteVerificado[] = [
     ],
   },
 ];
+
+// ─── Rating por dimensión de agente ──────────────────────────────────────────
+
+export interface RatingDimension {
+  general: number;
+  puntualidad: number;
+  trato: number;
+  seguridad: number;
+  presentacion: number;
+}
+
+export interface AgenteServicioItem {
+  id: string;
+  fecha: string;
+  tipo: string;
+  distrito: string;
+  duracion_horas: number;
+  monto: number;
+  estado: string;
+  rating: number | null;
+  disputa_id: string | null;
+}
+
+export interface AgenteExtendido extends MockAgenteVerificado {
+  rating_dimensions: RatingDimension;
+  servicios_history: AgenteServicioItem[];
+  badge_dates: Record<string, string>;
+  ingresos_totales: number;
+  cancelaciones_total: number;
+}
+
+export const mockAgentesExtendidos: Record<string, AgenteExtendido> = {
+  'av-001': {
+    ...mockAgentesVerificados.find(a => a.id === 'av-001')!,
+    rating_dimensions: { general: 4.8, puntualidad: 4.9, trato: 4.7, seguridad: 4.8, presentacion: 4.6 },
+    ingresos_totales: 6264,
+    cancelaciones_total: 1,
+    badge_dates: {
+      despegue: hoursAgo(700), activo: hoursAgo(650), veterano: hoursAgo(400),
+      puntual: hoursAgo(580), siempre_a_tiempo: hoursAgo(350),
+      bien_valorado: hoursAgo(300), excelencia: hoursAgo(200),
+      cero_cancelaciones: hoursAgo(250), residencial: hoursAgo(180), eventos: hoursAgo(120),
+    },
+    servicios_history: [
+      { id: 'srv-a001', fecha: hoursAgo(48), tipo: 'VIGILANCIA', distrito: 'Miraflores', duracion_horas: 8, monto: 400, estado: 'COMPLETADO', rating: 5, disputa_id: null },
+      { id: 'srv-a002', fecha: hoursAgo(120), tipo: 'EVENTO', distrito: 'San Isidro', duracion_horas: 6, monto: 300, estado: 'CANCELADO', rating: null, disputa_id: null },
+      { id: 'srv-a003', fecha: hoursAgo(200), tipo: 'PROTECCION_PERSONAL', distrito: 'Surco', duracion_horas: 4, monto: 200, estado: 'COMPLETADO', rating: 5, disputa_id: null },
+      { id: 'srv-a004', fecha: hoursAgo(300), tipo: 'VIGILANCIA', distrito: 'Miraflores', duracion_horas: 10, monto: 500, estado: 'COMPLETADO', rating: 4, disputa_id: null },
+      { id: 'srv-a005', fecha: hoursAgo(400), tipo: 'CUSTODIA', distrito: 'San Isidro', duracion_horas: 3, monto: 150, estado: 'COMPLETADO', rating: 5, disputa_id: null },
+    ],
+  },
+  'av-002': {
+    ...mockAgentesVerificados.find(a => a.id === 'av-002')!,
+    rating_dimensions: { general: 4.6, puntualidad: 4.5, trato: 4.7, seguridad: 4.6, presentacion: 4.4 },
+    ingresos_totales: 7416,
+    cancelaciones_total: 4,
+    badge_dates: {
+      despegue: hoursAgo(490), activo: hoursAgo(460), veterano: hoursAgo(320),
+      centurion: hoursAgo(150), puntual: hoursAgo(420), bien_valorado: hoursAgo(280),
+      cero_cancelaciones: hoursAgo(200), confiable: hoursAgo(100),
+      escolta: hoursAgo(90), residencial: hoursAgo(130),
+    },
+    servicios_history: [
+      { id: 'srv-b001', fecha: hoursAgo(24), tipo: 'PROTECCION_PERSONAL', distrito: 'Barranco', duracion_horas: 6, monto: 300, estado: 'COMPLETADO', rating: 5, disputa_id: null },
+      { id: 'srv-b002', fecha: hoursAgo(96), tipo: 'EVENTO', distrito: 'Miraflores', duracion_horas: 8, monto: 400, estado: 'COMPLETADO', rating: 4, disputa_id: null },
+      { id: 'srv-b003', fecha: hoursAgo(180), tipo: 'VIGILANCIA', distrito: 'San Isidro', duracion_horas: 12, monto: 600, estado: 'CANCELADO', rating: null, disputa_id: null },
+      { id: 'srv-b004', fecha: hoursAgo(260), tipo: 'PROTECCION_PERSONAL', distrito: 'Surco', duracion_horas: 4, monto: 200, estado: 'COMPLETADO', rating: 5, disputa_id: null },
+      { id: 'srv-b005', fecha: hoursAgo(340), tipo: 'CUSTODIA', distrito: 'Barranco', duracion_horas: 6, monto: 300, estado: 'COMPLETADO', rating: 4, disputa_id: null },
+    ],
+  },
+  'av-003': {
+    ...mockAgentesVerificados.find(a => a.id === 'av-003')!,
+    rating_dimensions: { general: 4.1, puntualidad: 3.8, trato: 3.9, seguridad: 4.2, presentacion: 3.5 },
+    ingresos_totales: 6408,
+    cancelaciones_total: 14,
+    badge_dates: {
+      despegue: hoursAgo(390), activo: hoursAgo(360), veterano: hoursAgo(200),
+      puntual: hoursAgo(300),
+    },
+    servicios_history: [
+      { id: 'srv-c001', fecha: hoursAgo(6), tipo: 'VIGILANCIA', distrito: 'Surco', duracion_horas: 8, monto: 400, estado: 'DISPUTADO', rating: null, disputa_id: 'DIS-002' },
+      { id: 'srv-c002', fecha: hoursAgo(72), tipo: 'EVENTO', distrito: 'Miraflores', duracion_horas: 4, monto: 200, estado: 'COMPLETADO', rating: 4, disputa_id: null },
+      { id: 'srv-c003', fecha: hoursAgo(150), tipo: 'VIGILANCIA', distrito: 'Surco', duracion_horas: 6, monto: 300, estado: 'CANCELADO', rating: null, disputa_id: null },
+      { id: 'srv-c004', fecha: hoursAgo(220), tipo: 'CUSTODIA', distrito: 'Chorrillos', duracion_horas: 10, monto: 500, estado: 'COMPLETADO', rating: 4, disputa_id: null },
+      { id: 'srv-c005', fecha: hoursAgo(300), tipo: 'PROTECCION_PERSONAL', distrito: 'Barranco', duracion_horas: 3, monto: 150, estado: 'COMPLETADO', rating: 4, disputa_id: null },
+    ],
+  },
+  'av-004': {
+    ...mockAgentesVerificados.find(a => a.id === 'av-004')!,
+    rating_dimensions: { general: 3.5, puntualidad: 3.0, trato: 3.6, seguridad: 3.7, presentacion: 3.2 },
+    ingresos_totales: 3024,
+    cancelaciones_total: 16,
+    badge_dates: {
+      despegue: hoursAgo(590), activo: hoursAgo(550), veterano: hoursAgo(380),
+    },
+    servicios_history: [
+      { id: 'srv-d001', fecha: hoursAgo(12), tipo: 'VIGILANCIA', distrito: 'Miraflores', duracion_horas: 8, monto: 400, estado: 'CANCELADO', rating: null, disputa_id: null },
+      { id: 'srv-d002', fecha: hoursAgo(200), tipo: 'EVENTO', distrito: 'Surco', duracion_horas: 6, monto: 300, estado: 'COMPLETADO', rating: 4, disputa_id: null },
+      { id: 'srv-d003', fecha: hoursAgo(350), tipo: 'VIGILANCIA', distrito: 'San Isidro', duracion_horas: 4, monto: 200, estado: 'COMPLETADO', rating: 3, disputa_id: null },
+      { id: 'srv-d004', fecha: hoursAgo(450), tipo: 'CUSTODIA', distrito: 'Miraflores', duracion_horas: 6, monto: 300, estado: 'CANCELADO', rating: null, disputa_id: null },
+    ],
+  },
+  'av-005': {
+    ...mockAgentesVerificados.find(a => a.id === 'av-005')!,
+    rating_dimensions: { general: 4.9, puntualidad: 4.9, trato: 4.8, seguridad: 4.9, presentacion: 4.7 },
+    ingresos_totales: 15120,
+    cancelaciones_total: 10,
+    badge_dates: {
+      despegue: hoursAgo(790), activo: hoursAgo(750), veterano: hoursAgo(600),
+      centurion: hoursAgo(400), puntual: hoursAgo(700), siempre_a_tiempo: hoursAgo(500),
+      reloj_suizo: hoursAgo(300), bien_valorado: hoursAgo(550), excelencia: hoursAgo(350),
+      diamante: hoursAgo(200), cero_cancelaciones: hoursAgo(450), confiable: hoursAgo(250),
+      residencial: hoursAgo(380), eventos: hoursAgo(320),
+    },
+    servicios_history: [
+      { id: 'srv-e001', fecha: hoursAgo(8), tipo: 'PROTECCION_PERSONAL', distrito: 'San Isidro', duracion_horas: 12, monto: 600, estado: 'COMPLETADO', rating: 5, disputa_id: null },
+      { id: 'srv-e002', fecha: hoursAgo(36), tipo: 'VIGILANCIA', distrito: 'Miraflores', duracion_horas: 8, monto: 400, estado: 'COMPLETADO', rating: 5, disputa_id: null },
+      { id: 'srv-e003', fecha: hoursAgo(80), tipo: 'EVENTO', distrito: 'Surco', duracion_horas: 10, monto: 500, estado: 'COMPLETADO', rating: 5, disputa_id: null },
+      { id: 'srv-e004', fecha: hoursAgo(160), tipo: 'CUSTODIA', distrito: 'San Isidro', duracion_horas: 6, monto: 300, estado: 'COMPLETADO', rating: 5, disputa_id: null },
+      { id: 'srv-e005', fecha: hoursAgo(240), tipo: 'PROTECCION_PERSONAL', distrito: 'Miraflores', duracion_horas: 4, monto: 200, estado: 'CANCELADO', rating: null, disputa_id: null },
+    ],
+  },
+  'av-006': {
+    ...mockAgentesVerificados.find(a => a.id === 'av-006')!,
+    rating_dimensions: { general: 3.8, puntualidad: 2.5, trato: 3.9, seguridad: 3.8, presentacion: 3.5 },
+    ingresos_totales: 2016,
+    cancelaciones_total: 12,
+    badge_dates: {
+      despegue: hoursAgo(340), activo: hoursAgo(300), puntual: hoursAgo(200),
+    },
+    servicios_history: [
+      { id: 'srv-f001', fecha: hoursAgo(3), tipo: 'EVENTO', distrito: 'Chorrillos', duracion_horas: 8, monto: 400, estado: 'DISPUTADO', rating: null, disputa_id: 'DIS-001' },
+      { id: 'srv-f002', fecha: hoursAgo(50), tipo: 'VIGILANCIA', distrito: 'Chorrillos', duracion_horas: 6, monto: 300, estado: 'CANCELADO', rating: null, disputa_id: null },
+      { id: 'srv-f003', fecha: hoursAgo(120), tipo: 'EVENTO', distrito: 'Miraflores', duracion_horas: 4, monto: 200, estado: 'COMPLETADO', rating: 4, disputa_id: null },
+      { id: 'srv-f004', fecha: hoursAgo(210), tipo: 'VIGILANCIA', distrito: 'Surco', duracion_horas: 3, monto: 150, estado: 'COMPLETADO', rating: 4, disputa_id: null },
+    ],
+  },
+};
+
+// ─── Audit Log ────────────────────────────────────────────────────────────────
+
+export type AuditAccion =
+  | 'VERIFICAR_AGENTE' | 'RECHAZAR_AGENTE'
+  | 'SUSPENDER_USUARIO' | 'BLOQUEAR_USUARIO' | 'REACTIVAR_USUARIO'
+  | 'AJUSTAR_SCORE' | 'RESOLVER_DISPUTA' | 'CONFIRMAR_PAGO'
+  | 'EMITIR_REEMBOLSO' | 'AGREGAR_NOTA';
+
+export interface MockAuditEntry {
+  id: string;
+  fecha: string;
+  operador: string;
+  accion: AuditAccion;
+  entidad: string;
+  detalle: string;
+}
+
+export const mockAuditLog: MockAuditEntry[] = [
+  { id: 'aud-001', fecha: hoursAgo(1),  operador: 'admin@secureguard.pe', accion: 'RESOLVER_DISPUTA',   entidad: 'Disputa: DIS-001',                   detalle: 'Reembolso parcial S/130 al cliente. Penalización aplicada al agente.' },
+  { id: 'aud-002', fecha: hoursAgo(2),  operador: 'admin@secureguard.pe', accion: 'AJUSTAR_SCORE',      entidad: 'Agente: Ernesto Vidal Cruz',          detalle: 'Delta -25 pts. Motivo: DISPUTA_RESUELTA_CONTRA_AGENTE. Score final: 15.' },
+  { id: 'aud-003', fecha: hoursAgo(4),  operador: 'ops@secureguard.pe',   accion: 'SUSPENDER_USUARIO',  entidad: 'Agente: Raúl Condori Puma',           detalle: 'Suspensión 7 días por cancelación tardía el 14/03. Suspendido hasta 21/03/2026.' },
+  { id: 'aud-004', fecha: hoursAgo(5),  operador: 'ops@secureguard.pe',   accion: 'AJUSTAR_SCORE',      entidad: 'Agente: Raúl Condori Puma',           detalle: 'Delta -25 pts. Motivo: CANCELACION_AGENTE_MENOS_2H. Score final: 35.' },
+  { id: 'aud-005', fecha: hoursAgo(6),  operador: 'admin@secureguard.pe', accion: 'RESOLVER_DISPUTA',   entidad: 'Disputa: DIS-002',                   detalle: 'Disputa cerrada a favor del cliente. Conducta inapropiada documentada.' },
+  { id: 'aud-006', fecha: hoursAgo(7),  operador: 'admin@secureguard.pe', accion: 'AJUSTAR_SCORE',      entidad: 'Agente: Marco Lazo Herrera',          detalle: 'Delta -10 pts. Motivo: DISPUTA_RESUELTA_CONTRA_AGENTE. Score final: 58.' },
+  { id: 'aud-007', fecha: hoursAgo(10), operador: 'ops@secureguard.pe',   accion: 'CONFIRMAR_PAGO',     entidad: 'Pago: PAY-1081',                     detalle: 'YAPE confirmado. Referencia YAPE-331-882. Cliente: Mónica Lara Espinoza.' },
+  { id: 'aud-008', fecha: hoursAgo(14), operador: 'admin@secureguard.pe', accion: 'AGREGAR_NOTA',       entidad: 'Agente: Marco Lazo Herrera',          detalle: 'Nota interna: "Tercer incidente en 90 días. Monitorear próximos servicios."' },
+  { id: 'aud-009', fecha: hoursAgo(18), operador: 'ops@secureguard.pe',   accion: 'VERIFICAR_AGENTE',   entidad: 'Agente: Silvia Torres Chávez',        detalle: 'Agente aprobada. SUCAMEC LIC-2024-08801 verificado. DNI 48123456.' },
+  { id: 'aud-010', fecha: hoursAgo(20), operador: 'admin@secureguard.pe', accion: 'CONFIRMAR_PAGO',     entidad: 'Pago: PAY-1079',                     detalle: 'YAPE confirmado. Referencia YAPE-220-441. Cliente: Jorge Ramírez Díaz.' },
+  { id: 'aud-011', fecha: hoursAgo(24), operador: 'ops@secureguard.pe',   accion: 'AJUSTAR_SCORE',      entidad: 'Agente: Antonio Flores Ríos',         detalle: 'Delta -15 pts. Motivo: CANCELACION_AGENTE_MAS_2H. Score final: 72.' },
+  { id: 'aud-012', fecha: hoursAgo(28), operador: 'admin@secureguard.pe', accion: 'EMITIR_REEMBOLSO',   entidad: 'Pago: PAY-1072',                     detalle: 'Reembolso S/150 emitido. Cliente: Ana Quispe León. Motivo: agente canceló servicio.' },
+  { id: 'aud-013', fecha: hoursAgo(32), operador: 'ops@secureguard.pe',   accion: 'RECHAZAR_AGENTE',    entidad: 'Agente: Carlos Mamani Puma',          detalle: 'SUCAMEC inválido. Número LIC-2025-99999 no encontrado en base de datos oficial.' },
+  { id: 'aud-014', fecha: hoursAgo(36), operador: 'admin@secureguard.pe', accion: 'VERIFICAR_AGENTE',   entidad: 'Agente: Rosa Huamán Flores',          detalle: 'Agente aprobada. SUCAMEC LIC-2024-07732 verificado. DNI 47234567.' },
+  { id: 'aud-015', fecha: hoursAgo(42), operador: 'ops@secureguard.pe',   accion: 'REACTIVAR_USUARIO',  entidad: 'Agente: Luis Vargas Mendoza',         detalle: 'Suspensión levantada tras revisión. 30 días cumplidos. Reactivado manualmente.' },
+  { id: 'aud-016', fecha: hoursAgo(48), operador: 'admin@secureguard.pe', accion: 'AJUSTAR_SCORE',      entidad: 'Agente: Pedro Sánchez López',         detalle: 'Delta +10 pts. Motivo: SERVICIO_COMPLETADO_5_ESTRELLAS. Score final: 95.' },
+  { id: 'aud-017', fecha: hoursAgo(52), operador: 'ops@secureguard.pe',   accion: 'CONFIRMAR_PAGO',     entidad: 'Pago: PAY-1065',                     detalle: 'YAPE confirmado. Referencia YAPE-109-773. Cliente: Daniela Cueva Ríos.' },
+  { id: 'aud-018', fecha: hoursAgo(56), operador: 'admin@secureguard.pe', accion: 'BLOQUEAR_USUARIO',   entidad: 'Cliente: Mónica Lara Espinoza',       detalle: 'Bloqueo permanente por fraude documentado. Tres chargebacks en 30 días.' },
+  { id: 'aud-019', fecha: hoursAgo(64), operador: 'ops@secureguard.pe',   accion: 'AGREGAR_NOTA',       entidad: 'Disputa: DIS-003',                   detalle: 'Revisión iniciada. Evidencias recibidas de ambas partes. Resolución en 48h.' },
+  { id: 'aud-020', fecha: hoursAgo(72), operador: 'admin@secureguard.pe', accion: 'VERIFICAR_AGENTE',   entidad: 'Agente: Fernando Castro Pérez',       detalle: 'Agente aprobado. SUCAMEC LIC-2023-05543 verificado. Primer agente semana 10.' },
+];
