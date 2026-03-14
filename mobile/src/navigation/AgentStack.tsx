@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
+import ChatScreen from '../screens/ChatScreen';
 import ActiveServiceScreen from '../screens/agent/ActiveServiceScreen';
 import AgentHomeScreen from '../screens/agent/AgentHomeScreen';
 import OpenRequestsScreen from '../screens/agent/OpenRequestsScreen';
@@ -33,6 +34,14 @@ export default function AgentStack(): React.ReactElement {
         name="ActiveService"
         component={ActiveServiceScreen}
         options={{ title: 'Servicio activo', headerBackVisible: false }}
+      />
+      <Stack.Screen
+        name="Chat"
+        component={ChatScreen}
+        options={({ route }) => ({
+          title: route.params.interlocutorNombre,
+          headerTintColor: '#0f3460',
+        })}
       />
       <Stack.Screen
         name="Reviews"

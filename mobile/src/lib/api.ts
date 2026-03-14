@@ -1,18 +1,36 @@
+import { Platform } from 'react-native';
 import type {
+  AgentDayStats,
+  AgentListItem,
   AgentProfile,
   AgentProfileResponse,
   AgentRegisterResponse,
   ApiResult,
+  ChatMessage,
   DocumentUploadResponse,
+  ReviewRequest,
+  ReviewResponse,
   SendOtpResponse,
   ServiceRequest,
   ServiceResponse,
+  SosResponse,
   UserTipo,
   VerifyOtpResponse,
 } from '../types';
 
-const BASE_URL =
-  (process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8001').replace(/\/$/, '');
+function resolveBaseUrl(): string {
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL.replace(/\/$/, '');
+  }
+  if (__DEV__) {
+    return Platform.OS === 'android'
+      ? 'http://10.0.2.2:8001'
+      : 'http://localhost:8001';
+  }
+  return 'http://localhost:8001';
+}
+
+const BASE_URL = resolveBaseUrl();
 
 // ── Core fetch wrapper ─────────────────────────────────────────
 async function apiFetch<T>(
@@ -139,7 +157,6 @@ export function uploadDocument(
 ): Promise<ApiResult<DocumentUploadResponse>> {
   const formData = new FormData();
   formData.append('tipo', tipo);
-  // React Native requiere este formato para archivos en FormData
   formData.append('file', {
     uri: file.uri,
     name: file.name,
@@ -159,6 +176,32 @@ export function getAgentProfile(
 ): Promise<ApiResult<AgentProfileResponse>> {
   return apiFetch<AgentProfileResponse>(
     `/agents/${agentId}/profile`,
+    { method: 'GET' },
+    token,
+  );
+}
+
+export function updateAgentAvailability(
+  agentId: string,
+  disponible: boolean,
+  token: string,
+): Promise<ApiResult<{ disponible: boolean }>> {
+  return apiFetch<{ disponible: boolean }>(
+    `/agents/${agentId}/availability`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ disponible }),
+    },
+    token,
+  );
+}
+
+export function getAgentDayStats(
+  agentId: string,
+  token: string,
+): Promise<ApiResult<AgentDayStats>> {
+  return apiFetch<AgentDayStats>(
+    `/agents/${agentId}/stats/day`,
     { method: 'GET' },
     token,
   );
@@ -189,12 +232,158 @@ export function getMyActiveServices(
   );
 }
 
+export function getMyRecentServices(
+  token: string,
+): Promise<ApiResult<ServiceResponse[]>> {
+  return apiFetch<ServiceResponse[]>(
+    '/services/my-recent',
+    { method: 'GET' },
+    token,
+  );
+}
+
+export function getServiceById(
+  serviceId: string,
+  token: string,
+): Promise<ApiResult<ServiceResponse>> {
+  return apiFetch<ServiceResponse>(
+    `/services/${serviceId}`,
+    { method: 'GET' },
+    token,
+  );
+}
+
 export function getOpenRequests(
   token: string,
 ): Promise<ApiResult<ServiceResponse[]>> {
   return apiFetch<ServiceResponse[]>(
     '/services/open-requests',
     { method: 'GET' },
+    token,
+  );
+}
+
+// ── Agentes para un servicio ──────────────────────────────────
+export function getAgentsForService(
+  serviceId: string,
+  token: string,
+): Promise<ApiResult<AgentListItem[]>> {
+  return apiFetch<AgentListItem[]>(
+    `/services/${serviceId}/agents`,
+    { method: 'GET' },
+    token,
+  );
+}
+
+export function selectAgent(
+  serviceId: string,
+  agentId: string,
+  token: string,
+): Promise<ApiResult<ServiceResponse>> {
+  return apiFetch<ServiceResponse>(
+    `/services/${serviceId}/select-agent`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ agent_id: agentId }),
+    },
+    token,
+  );
+}
+
+// ── Respuesta del agente a solicitud ─────────────────────────
+export function agentRespond(
+  serviceId: string,
+  accion: 'ACEPTAR' | 'IGNORAR',
+  token: string,
+): Promise<ApiResult<ServiceResponse>> {
+  return apiFetch<ServiceResponse>(
+    `/services/${serviceId}/agent-respond`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ accion }),
+    },
+    token,
+  );
+}
+
+// ── Ciclo de vida del servicio ────────────────────────────────
+export function startService(
+  serviceId: string,
+  token: string,
+): Promise<ApiResult<ServiceResponse>> {
+  return apiFetch<ServiceResponse>(
+    `/services/${serviceId}/start`,
+    { method: 'POST' },
+    token,
+  );
+}
+
+export function completeService(
+  serviceId: string,
+  reporte: string,
+  token: string,
+): Promise<ApiResult<ServiceResponse>> {
+  return apiFetch<ServiceResponse>(
+    `/services/${serviceId}/complete`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ reporte }),
+    },
+    token,
+  );
+}
+
+// ── SOS ───────────────────────────────────────────────────────
+export function sendSos(
+  serviceId: string,
+  token: string,
+): Promise<ApiResult<SosResponse>> {
+  return apiFetch<SosResponse>(
+    `/services/${serviceId}/sos`,
+    { method: 'POST' },
+    token,
+  );
+}
+
+// ── Chat ──────────────────────────────────────────────────────
+export function getMessages(
+  serviceId: string,
+  token: string,
+): Promise<ApiResult<ChatMessage[]>> {
+  return apiFetch<ChatMessage[]>(
+    `/services/${serviceId}/messages`,
+    { method: 'GET' },
+    token,
+  );
+}
+
+export function sendMessage(
+  serviceId: string,
+  texto: string,
+  token: string,
+): Promise<ApiResult<ChatMessage>> {
+  return apiFetch<ChatMessage>(
+    `/services/${serviceId}/messages`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ texto }),
+    },
+    token,
+  );
+}
+
+// ── Reviews ───────────────────────────────────────────────────
+export function submitReview(
+  serviceId: string,
+  data: ReviewRequest,
+  token: string,
+): Promise<ApiResult<ReviewResponse>> {
+  return apiFetch<ReviewResponse>(
+    `/services/${serviceId}/review`,
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    },
     token,
   );
 }

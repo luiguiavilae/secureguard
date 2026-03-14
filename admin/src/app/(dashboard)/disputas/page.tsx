@@ -1,4 +1,3 @@
-// TODO: Página lista de disputas — filtrar por estado, asignar a admin, ver timeline
 import React from 'react';
 import { DisputeList } from '@/components/disputas/DisputeList';
 
@@ -7,7 +6,12 @@ export const metadata = { title: 'Disputas — SecureGuard Admin' };
 export default function DisputasPage() {
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Disputas</h1>
+      <div className="mb-6">
+        <h1 className="text-xl font-bold text-gray-900">Disputas</h1>
+        <p className="mt-0.5 text-sm text-gray-500">
+          Gestiona y resuelve disputas entre clientes y agentes
+        </p>
+      </div>
       <DisputeList />
     </div>
   );

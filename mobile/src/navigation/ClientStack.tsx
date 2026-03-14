@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
+import ChatScreen from '../screens/ChatScreen';
 import ActiveServiceScreen from '../screens/client/ActiveServiceScreen';
 import AgentListScreen from '../screens/client/AgentListScreen';
 import AgentProfileScreen from '../screens/client/AgentProfileScreen';
@@ -45,6 +46,14 @@ export default function ClientStack(): React.ReactElement {
         name="ActiveService"
         component={ActiveServiceScreen}
         options={{ title: 'Servicio activo', headerBackVisible: false }}
+      />
+      <Stack.Screen
+        name="Chat"
+        component={ChatScreen}
+        options={({ route }) => ({
+          title: route.params.interlocutorNombre,
+          headerTintColor: '#0f3460',
+        })}
       />
       <Stack.Screen
         name="Review"
