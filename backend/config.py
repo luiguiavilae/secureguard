@@ -1,4 +1,10 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _ascii_clean(v: str) -> str:
+    """Elimina caracteres no-ASCII (ej. \\u2028) que rompen headers HTTP de supabase-py/httpx."""
+    return v.encode("ascii", errors="ignore").decode("ascii").strip()
 
 
 class Settings(BaseSettings):
@@ -70,6 +76,11 @@ class Settings(BaseSettings):
             return True
         url_l, key_l = url.lower(), key.lower()
         return any(f in url_l or f in key_l for f in _PLACEHOLDER_FRAGMENTS)
+
+    @field_validator("supabase_url", "supabase_anon_key", "supabase_service_role_key", "supabase_jwt_secret", mode="before")
+    @classmethod
+    def clean_supabase_credentials(cls, v: str) -> str:
+        return _ascii_clean(v)
 
     model_config = SettingsConfigDict(
         env_file=".env",
