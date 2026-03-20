@@ -1,3 +1,4 @@
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
@@ -190,12 +191,44 @@ export default function CreateServiceScreen(): React.ReactElement {
   const [form, setForm] = useState<FormState>(initialState);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  // Fecha en formato texto: DD/MM/AAAA HH:MM
-  const [fechaTexto, setFechaTexto] = useState(() => {
-    const d = new Date(Date.now() + 60 * 60 * 1000);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  });
+  const [showPicker, setShowPicker] = useState(false);
+  const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
+
+  const DAYS_ES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  const MONTHS_ES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+  function formatFecha(date: Date): string {
+    const day = DAYS_ES[date.getDay()];
+    const d = date.getDate();
+    const month = MONTHS_ES[date.getMonth()];
+    const year = date.getFullYear();
+    const h24 = date.getHours();
+    const min = String(date.getMinutes()).padStart(2, '0');
+    const ampm = h24 >= 12 ? 'PM' : 'AM';
+    const h12 = h24 % 12 || 12;
+    return `${day} ${d} ${month} ${year}, ${h12}:${min} ${ampm}`;
+  }
+
+  function handleDateChange(_event: unknown, selected?: Date): void {
+    if (!selected) {
+      setShowPicker(false);
+      return;
+    }
+    if (pickerMode === 'date') {
+      const next = new Date(form.fechaInicio);
+      next.setFullYear(selected.getFullYear(), selected.getMonth(), selected.getDate());
+      set('fechaInicio', next);
+      setShowPicker(false);
+      setPickerMode('time');
+      setTimeout(() => setShowPicker(true), 50);
+    } else {
+      const next = new Date(form.fechaInicio);
+      next.setHours(selected.getHours(), selected.getMinutes(), 0, 0);
+      set('fechaInicio', next);
+      setShowPicker(false);
+      setPickerMode('date');
+    }
+  }
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -543,22 +576,22 @@ export default function CreateServiceScreen(): React.ReactElement {
             </View>
 
             <Text style={[styles.fieldLabel, { marginTop: 20 }]}>Fecha y hora de inicio</Text>
-            <Text style={styles.dateHint}>Formato: DD/MM/AAAA HH:MM</Text>
-            <Input
-              value={fechaTexto}
-              onChangeText={(v) => {
-                setFechaTexto(v);
-                // Parse DD/MM/AAAA HH:MM
-                const match = v.match(/^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2})$/);
-                if (match) {
-                  const [, d, m, y, h, min] = match;
-                  const parsed = new Date(Number(y), Number(m) - 1, Number(d), Number(h), Number(min));
-                  if (!isNaN(parsed.getTime())) set('fechaInicio', parsed);
-                }
-              }}
-              placeholder="13/03/2026 14:00"
-              keyboardType="numeric"
-            />
+            <TouchableOpacity
+              style={styles.dateBtn}
+              onPress={() => { setPickerMode('date'); setShowPicker(true); }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.dateBtnText}>📅  {formatFecha(form.fechaInicio)}</Text>
+            </TouchableOpacity>
+            {showPicker && (
+              <DateTimePicker
+                value={form.fechaInicio}
+                mode={pickerMode}
+                display="default"
+                minimumDate={new Date()}
+                onChange={handleDateChange}
+              />
+            )}
 
             <Text style={[styles.fieldLabel, { marginTop: 20 }]}>Duración</Text>
             <View style={styles.stepperRow}>
@@ -718,7 +751,16 @@ const styles = StyleSheet.create({
   textarea: { fontSize: 15, color: '#1f2937', minHeight: 80 },
   charCount: { alignSelf: 'flex-end', fontSize: 11, color: '#9ca3af', marginTop: 4 },
 
-  dateHint: { fontSize: 12, color: '#9ca3af', marginBottom: 6 },
+  dateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderWidth: 1.5,
+    borderColor: '#d1d5db',
+    borderRadius: 10,
+    padding: 14,
+  },
+  dateBtnText: { fontSize: 15, color: '#1f2937', fontWeight: '500' },
 
   // Stepper
   stepperRow: { flexDirection: 'row', alignItems: 'center', gap: 20 },
