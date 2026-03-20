@@ -20,7 +20,16 @@ class Settings(BaseSettings):
 
     # ── OTP ───────────────────────────────────────────────────
     otp_expire_minutes: int = 10
+    # Sobrescribible con OTP_RATE_LIMIT_PER_HOUR en Railway.
+    # Default: 10 en development/test, 3 en production.
     otp_rate_limit_per_hour: int = 3
+
+    @property
+    def effective_otp_rate_limit(self) -> int:
+        """10 intentos/hora en dev/test; 3 en producción (salvo override explícito)."""
+        if self.backend_env.lower() in ("development", "test"):
+            return 10
+        return self.otp_rate_limit_per_hour
 
     # ── Supabase ─────────────────────────────────────────────
     supabase_url: str = ""

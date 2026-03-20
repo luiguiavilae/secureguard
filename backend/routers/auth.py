@@ -136,13 +136,13 @@ async def send_otp(body: SendOTPRequest):
         .gte("created_at", one_hour_ago)
         .execute()
     )
-    if (attempts_result.count or 0) >= settings.otp_rate_limit_per_hour:
+    if (attempts_result.count or 0) >= settings.effective_otp_rate_limit:
         logger.warning(f"Rate limit OTP alcanzado para {phone}")
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=(
                 f"Demasiados intentos. Has alcanzado el límite de "
-                f"{settings.otp_rate_limit_per_hour} códigos por hora. "
+                f"{settings.effective_otp_rate_limit} códigos por hora. "
                 "Espera un momento antes de solicitar otro."
             ),
         )
