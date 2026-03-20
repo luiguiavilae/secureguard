@@ -77,9 +77,13 @@ class Settings(BaseSettings):
         url_l, key_l = url.lower(), key.lower()
         return any(f in url_l or f in key_l for f in _PLACEHOLDER_FRAGMENTS)
 
-    @field_validator("supabase_url", "supabase_anon_key", "supabase_service_role_key", "supabase_jwt_secret", mode="before")
+    @field_validator(
+        "supabase_url", "supabase_anon_key", "supabase_service_role_key", "supabase_jwt_secret",
+        "twilio_account_sid", "twilio_auth_token", "twilio_verify_service_sid",
+        mode="before",
+    )
     @classmethod
-    def clean_supabase_credentials(cls, v: str) -> str:
+    def clean_credentials(cls, v: str) -> str:
         return _ascii_clean(v)
 
     model_config = SettingsConfigDict(
