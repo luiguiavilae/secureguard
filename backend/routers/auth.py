@@ -169,7 +169,7 @@ async def send_otp(body: SendOTPRequest):
 
     # ── 4. Enviar SMS ─────────────────────────────────────
     msg_text = (
-        f"Tu código SecureGuard es: {otp_code}. "
+        f"Salvus: tu código de acceso es {otp_code}. "
         f"Válido por {settings.otp_expire_minutes} minutos. "
         "No lo compartas con nadie."
     )
