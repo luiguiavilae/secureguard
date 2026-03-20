@@ -30,14 +30,17 @@ def _log_event(
     actor_id: str,
     datos: Optional[dict] = None,
 ) -> None:
-    db.table("service_events").insert(
-        {
-            "service_id": service_id,
-            "tipo": tipo,
-            "actor_id": actor_id,
-            "datos": datos or {},
-        }
-    ).execute()
+    try:
+        db.table("service_events").insert(
+            {
+                "service_id": service_id,
+                "tipo": tipo,
+                "actor_id": actor_id,
+                "datos": datos or {},
+            }
+        ).execute()
+    except Exception as exc:
+        logger.warning(f"_log_event falló (no crítico): {exc}")
 
 
 def _designate_leader(db, service_id: str, agente_ids: list[str]) -> str:
@@ -192,20 +195,37 @@ async def create_service(
         * SYSTEM_CONFIG["precio_hora_cliente"]
     )
 
-    result = db.table("service_requests").insert(
-        {
-            "cliente_id": user.user_id,
-            "descripcion": body.descripcion,
-            "distrito": body.distrito,
-            "tipo_servicio": body.tipo_servicio,
-            "agentes_requeridos": body.agentes_requeridos,
-            "duracion_horas": body.duracion_horas,
-            "fecha_inicio_solicitada": body.fecha_inicio_solicitada,
-            "precio_total": precio_total,
-            "estado": "ABIERTA",
-            "cupos_cubiertos": 0,
-        }
-    ).execute()
+    try:
+        result = db.table("service_requests").insert(
+            {
+                "cliente_id": user.user_id,
+                "descripcion": body.descripcion,
+                "distrito": body.distrito,
+                "tipo_servicio": body.tipo_servicio,
+                "agentes_requeridos": body.agentes_requeridos,
+                "duracion_horas": body.duracion_horas,
+                "fecha_inicio_solicitada": body.fecha_inicio_solicitada,
+                "precio_total": precio_total,
+                "estado": "ABIERTA",
+                "cupos_cubiertos": 0,
+            }
+        ).execute()
+    except Exception as exc:
+        logger.error(f"Error Supabase al insertar servicio: {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al guardar el servicio: {exc}",
+        )
+
+    if not result.data:
+        logger.error(
+            f"Supabase insert retornó data vacía — posible RLS, constraint o tabla inexistente. "
+            f"cliente: {user.user_id}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="No se pudo crear el servicio. Verifica la configuración de la base de datos.",
+        )
 
     service = result.data[0]
     _log_event(db, service["id"], "SERVICIO_CREADO", user.user_id)
