@@ -197,8 +197,15 @@ export default function HomeScreen(): React.ReactElement {
           <Button
             title="Solicitar seguridad"
             onPress={() => navigation.navigate('CreateService')}
+            disabled={activeServices.length > 0}
           />
-          <Text style={styles.ctaSubtext}>Respuesta en menos de 10 minutos</Text>
+          {activeServices.length > 0 ? (
+            <Text style={styles.ctaSubtextBlocked}>
+              Tienes un servicio activo. Resuélvelo antes de solicitar uno nuevo.
+            </Text>
+          ) : (
+            <Text style={styles.ctaSubtext}>Respuesta en menos de 10 minutos</Text>
+          )}
         </View>
 
         {/* Lista reciente */}
@@ -294,6 +301,7 @@ const styles = StyleSheet.create({
   // CTA
   ctaContainer: { paddingHorizontal: 20, marginTop: 24, gap: 8 },
   ctaSubtext: { textAlign: 'center', color: '#6b7280', fontSize: 13 },
+  ctaSubtextBlocked: { textAlign: 'center', color: '#d97706', fontSize: 13, fontWeight: '500' },
 
   // Recent
   recentList: {
