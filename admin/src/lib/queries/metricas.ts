@@ -11,6 +11,9 @@ export async function getMetricas(): Promise<{
     today.setHours(0, 0, 0, 0);
     const todayIso = today.toISOString();
 
+    const fallback = { data: null, count: 0, error: null };
+    const safe = <T>(p: PromiseLike<T>) => Promise.resolve(p).catch(() => fallback);
+
     const [
       activosRes,
       gmvRes,
@@ -20,41 +23,52 @@ export async function getMetricas(): Promise<{
       serviciosRes,
     ] = await Promise.all([
       // Servicios activos (CONFIRMADO o EN_CURSO)
-      db
-        .from('service_requests')
-        .select('*', { count: 'exact', head: true })
-        .in('estado', ['CONFIRMADO', 'EN_CURSO']),
+      safe(
+        db
+          .from('service_requests')
+          .select('*', { count: 'exact', head: true })
+          .in('estado', ['CONFIRMADO', 'EN_CURSO']),
+      ),
       // GMV hoy: pagos PAGADO creados hoy
-      db
-        .from('payments')
-        .select('monto')
-        .eq('estado', 'PAGADO')
-        .gte('created_at', todayIso),
+      safe(
+        db
+          .from('payments')
+          .select('monto')
+          .eq('estado', 'PAGADO')
+          .gte('created_at', todayIso),
+      ),
       // Agentes disponibles: verificados y no en servicio
-      db
-        .from('agent_profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'verified')
-        .eq('en_servicio', false),
+      safe(
+        db
+          .from('agent_profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'verified')
+          .eq('en_servicio', false),
+      ),
       // Solicitudes abiertas
-      db
-        .from('service_requests')
-        .select('*', { count: 'exact', head: true })
-        .in('estado', ['ABIERTA', 'PARCIAL']),
+      safe(
+        db
+          .from('service_requests')
+          .select('*', { count: 'exact', head: true })
+          .in('estado', ['ABIERTA', 'PARCIAL']),
+      ),
       // Disputas abiertas (tabla puede llamarse disputes o disputas)
-      db
-        .from('disputes')
-        .select('*', { count: 'exact', head: true })
-        .in('estado', ['ABIERTA', 'EN_REVISION'])
-        .throwOnError(),
+      safe(
+        db
+          .from('disputes')
+          .select('*', { count: 'exact', head: true })
+          .in('estado', ['ABIERTA', 'EN_REVISION']),
+      ),
       // Servicios del día para la tabla
-      db
-        .from('service_requests')
-        .select('*')
-        .gte('created_at', todayIso)
-        .order('created_at', { ascending: false })
-        .limit(20),
-    ].map((p) => p.catch(() => ({ data: null, count: 0, error: null }))));
+      safe(
+        db
+          .from('service_requests')
+          .select('*')
+          .gte('created_at', todayIso)
+          .order('created_at', { ascending: false })
+          .limit(20),
+      ),
+    ] as const);
 
     const gmv_hoy = (gmvRes.data ?? []).reduce(
       (sum: number, p: any) => sum + (parseFloat(p.monto) || 0),
