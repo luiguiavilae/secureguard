@@ -67,7 +67,7 @@ PAYMENT_RAW=$(curl -s -w "\n--- HTTP %{http_code} ---" \
   -X POST "${BASE_URL}/payments/create-intent" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ${TOKEN}" \
-  -d "{\"service_request_id\":\"${SERVICE_ID}\",\"metodo_pago\":\"STRIPE_TEST\"}")
+  -d "{\"service_id\":\"${SERVICE_ID}\",\"metodo\":\"STRIPE_TEST\"}")
 echo "Respuesta create-intent:"
 echo "${PAYMENT_RAW}"
 echo ""
