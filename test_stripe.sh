@@ -41,7 +41,7 @@ echo ""
 
 # ── 3. Crear solicitud de servicio ─────────────
 echo "[3/4] Creando solicitud de servicio..."
-SERVICE_RAW=$(curl -s -w "\n--- HTTP %{http_code} ---" \
+SERVICE_RAW=$(curl -sL -w "\n--- HTTP %{http_code} ---" \
   -X POST "${BASE_URL}/services" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ${TOKEN}" \
