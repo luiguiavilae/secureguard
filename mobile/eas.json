@@ -1,6 +1,6 @@
 {
   "cli": {
-    "version": ">= 12.0.0"
+    "version": ">= 5.0.0"
   },
   "build": {
     "preview": {
@@ -15,13 +15,9 @@
       "android": {
         "buildType": "app-bundle"
       },
-      "ios": {},
       "env": {
         "EXPO_PUBLIC_API_URL": "https://secureguard-production-7349.up.railway.app"
       }
     }
-  },
-  "submit": {
-    "production": {}
   }
 }
