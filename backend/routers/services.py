@@ -717,6 +717,33 @@ async def complete_service(
     return {"message": "Servicio completado. ¡Gracias!", "estado": "COMPLETADO"}
 
 
+@router.post("/{service_id}/force-confirm")
+async def force_confirm(
+    service_id: str,
+    user: CurrentUser = Depends(get_current_user),
+):
+    """Solo disponible en BACKEND_ENV=development. Fuerza estado CONFIRMADO para pruebas."""
+    from config import settings
+    if settings.backend_env.lower() not in ("development", "test"):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+    try:
+        db = get_supabase()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
+
+    result = db.table("service_requests").select("id,cliente_id").eq("id", service_id).limit(1).execute()
+    if not result.data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Servicio no encontrado")
+    if result.data[0]["cliente_id"] != user.user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No autorizado")
+
+    db.table("service_requests").update({"estado": "CONFIRMADO"}).eq("id", service_id).execute()
+    _log_event(db, service_id, "FORCE_CONFIRM_DEV", user.user_id)
+    logger.warning(f"[DEV] force-confirm aplicado al servicio {service_id} por {user.user_id}")
+    return {"estado": "CONFIRMADO", "message": "Estado forzado a CONFIRMADO (solo desarrollo)"}
+
+
 @router.post("/{service_id}/sos")
 async def sos(
     service_id: str,

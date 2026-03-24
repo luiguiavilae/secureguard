@@ -61,6 +61,16 @@ fi
 echo "✓ Servicio creado: ${SERVICE_ID}"
 echo ""
 
+# ── 3.5. Forzar estado CONFIRMADO (dev only) ──
+echo "[3.5/4] Forzando estado CONFIRMADO (endpoint dev)..."
+CONFIRM_RAW=$(curl -s -w "\n--- HTTP %{http_code} ---" \
+  -X POST "${BASE_URL}/services/${SERVICE_ID}/force-confirm" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${TOKEN}")
+echo "Respuesta force-confirm:"
+echo "${CONFIRM_RAW}"
+echo ""
+
 # ── 4. Crear PaymentIntent con Stripe ─────────
 echo "[4/4] Creando PaymentIntent (STRIPE_TEST)..."
 PAYMENT_RAW=$(curl -s -w "\n--- HTTP %{http_code} ---" \
