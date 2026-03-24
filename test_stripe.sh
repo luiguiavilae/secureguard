@@ -41,11 +41,13 @@ echo ""
 
 # ── 3. Crear solicitud de servicio ─────────────
 echo "[3/4] Creando solicitud de servicio..."
-SERVICE_RAW=$(curl -sL -w "\n--- HTTP %{http_code} ---" \
-  -X POST "${BASE_URL}/services" \
+SERVICE_BODY="{\"tipo_servicio\":\"acompanamiento\",\"distrito\":\"Miraflores\",\"fecha_inicio_solicitada\":\"${FECHA_INICIO}\",\"duracion_horas\":3,\"agentes_requeridos\":1,\"descripcion\":\"Test Stripe desde script\"}"
+echo ">>> curl -s -X POST ${BASE_URL}/services/ -H 'Content-Type: application/json' -H 'Authorization: Bearer ${TOKEN:0:20}...' -d '${SERVICE_BODY}'"
+SERVICE_RAW=$(curl -s -w "\n--- HTTP %{http_code} ---" \
+  -X POST "${BASE_URL}/services/" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ${TOKEN}" \
-  -d "{\"tipo_servicio\":\"acompanamiento\",\"distrito\":\"Miraflores\",\"fecha_inicio_solicitada\":\"${FECHA_INICIO}\",\"duracion_horas\":3,\"agentes_requeridos\":1,\"descripcion\":\"Test Stripe desde script\"}")
+  -d "${SERVICE_BODY}")
 echo "Respuesta create service:"
 echo "${SERVICE_RAW}"
 echo ""
