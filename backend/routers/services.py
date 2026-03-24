@@ -4,7 +4,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel, field_validator
 
 from middleware.auth import CurrentUser, get_current_user
@@ -721,10 +721,15 @@ async def complete_service(
 async def force_confirm(
     service_id: str,
     user: CurrentUser = Depends(get_current_user),
+    x_dev_key: Optional[str] = Header(default=None),
 ):
-    """Solo disponible en BACKEND_ENV=development. Fuerza estado CONFIRMADO para pruebas."""
+    """Fuerza estado CONFIRMADO para pruebas.
+    Accesible en dev/test sin key, o en cualquier entorno con header X-Dev-Key correcto.
+    """
     from config import settings
-    if settings.backend_env.lower() not in ("development", "test"):
+    is_dev_env = settings.backend_env.lower() in ("development", "test")
+    is_authorized_key = x_dev_key and x_dev_key == settings.admin_secret_key
+    if not is_dev_env and not is_authorized_key:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
 
     try:

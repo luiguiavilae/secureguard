@@ -5,6 +5,8 @@ set -euo pipefail
 BASE_URL="https://secureguard-production-7349.up.railway.app"
 PHONE="994790943"
 FECHA_INICIO="2026-03-25T10:00:00"
+# Debe coincidir con ADMIN_SECRET_KEY en Railway
+ADMIN_SECRET_KEY="${ADMIN_SECRET_KEY:-dev-admin-key}"
 
 # Formatea JSON si jq está disponible, si no muestra raw
 fmt() { command -v jq &>/dev/null && jq . || cat; }
@@ -66,7 +68,8 @@ echo "[3.5/4] Forzando estado CONFIRMADO (endpoint dev)..."
 CONFIRM_RAW=$(curl -s -w "\n--- HTTP %{http_code} ---" \
   -X POST "${BASE_URL}/services/${SERVICE_ID}/force-confirm" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer ${TOKEN}")
+  -H "Authorization: Bearer ${TOKEN}" \
+  -H "X-Dev-Key: ${ADMIN_SECRET_KEY}")
 echo "Respuesta force-confirm:"
 echo "${CONFIRM_RAW}"
 echo ""
