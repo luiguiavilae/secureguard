@@ -5,6 +5,7 @@ import ActiveServiceScreen from '../screens/agent/ActiveServiceScreen';
 import AgentHomeScreen from '../screens/agent/AgentHomeScreen';
 import OpenRequestsScreen from '../screens/agent/OpenRequestsScreen';
 import ReviewsScreen from '../screens/agent/ReviewsScreen';
+import TermsViewScreen from '../screens/legal/TermsViewScreen';
 import type { AgentStackParamList } from '../types';
 
 const Stack = createNativeStackNavigator<AgentStackParamList>();
@@ -47,6 +48,11 @@ export default function AgentStack(): React.ReactElement {
         name="Reviews"
         component={ReviewsScreen}
         options={{ title: 'Mis reseñas' }}
+      />
+      <Stack.Screen
+        name="TermsView"
+        component={TermsViewScreen}
+        options={{ title: 'Términos y Condiciones' }}
       />
     </Stack.Navigator>
   );

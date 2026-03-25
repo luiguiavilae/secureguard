@@ -191,6 +191,18 @@ class AgentRespondRequest(BaseModel):
         return v
 
 
+class CancelRequest(BaseModel):
+    motivo: str = ""
+
+    @field_validator("motivo")
+    @classmethod
+    def validate_motivo(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) > 500:
+            raise ValueError("El motivo no puede exceder 500 caracteres")
+        return v
+
+
 class SOSRequest(BaseModel):
     tipo: str  # "CLIENTE" | "AGENTE"
     descripcion: str
@@ -896,4 +908,203 @@ async def sos(
     return {
         "incidente_id": incidente_id,
         "mensaje": "SOS registrado. Ayuda en camino.",
+    }
+
+
+# ── Cancelación ──────────────────────────────────────────────
+
+@router.post("/{service_id}/cancel")
+async def cancel_service(
+    service_id: str,
+    body: CancelRequest,
+    user: CurrentUser = Depends(get_current_user),
+):
+    """Cancela un servicio. Solo el cliente dueño puede cancelar.
+
+    Estados permitidos: ABIERTA, EN_REVISION, CONFIRMADO_PAGADO.
+
+    Política de reembolso (solo aplica a CONFIRMADO_PAGADO):
+    - > 2h antes del inicio : 75 % reembolso  (sin penalidad de score)
+    - 1-2h antes del inicio : 50 % reembolso  (-5 score)
+    - < 1h antes del inicio : 25 % reembolso  (-10 score)
+    - ya iniciado / pasado  :  0 % reembolso  (-15 score)
+    """
+    if user.tipo != "CLIENTE":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo clientes pueden cancelar servicios",
+        )
+
+    try:
+        db = get_supabase()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
+
+    svc_result = (
+        db.table("service_requests").select("*").eq("id", service_id).limit(1).execute()
+    )
+    if not svc_result.data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Servicio no encontrado")
+
+    service = svc_result.data[0]
+    if service["cliente_id"] != user.user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No autorizado")
+
+    ESTADOS_CANCELABLES = {"ABIERTA", "EN_REVISION", "CONFIRMADO_PAGADO"}
+    if service["estado"] not in ESTADOS_CANCELABLES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"No se puede cancelar un servicio en estado '{service['estado']}'",
+        )
+
+    precio_total: float = float(service.get("precio_total") or 0)
+    stripe_pi: Optional[str] = service.get("stripe_payment_intent_id")
+
+    # ── Calcular reembolso (solo aplica si hubo pago) ────────────────────
+    monto_reembolso: float = 0.0
+    pct_reembolso: float = 0.0
+    score_delta: float = 0.0
+    penalidad: str = "CANCELACION_LIBRE"
+
+    if service["estado"] == "CONFIRMADO_PAGADO" and precio_total > 0:
+        # Tiempo hasta el inicio
+        fecha_inicio_str = service.get("fecha_inicio_solicitada")
+        minutos_hasta_inicio: float = float("inf")
+        if fecha_inicio_str:
+            try:
+                from dateutil import parser as dtparser
+                fecha_inicio = dtparser.parse(str(fecha_inicio_str))
+                if fecha_inicio.tzinfo is None:
+                    fecha_inicio = fecha_inicio.replace(tzinfo=timezone.utc)
+                minutos_hasta_inicio = (fecha_inicio - datetime.now(timezone.utc)).total_seconds() / 60
+            except Exception:
+                minutos_hasta_inicio = float("inf")
+
+        if minutos_hasta_inicio <= 0:
+            pct_reembolso = 0.0
+            score_delta = -15.0
+            penalidad = "CANCELACION_CLIENTE_EN_CAMINO"
+        elif minutos_hasta_inicio < 60:
+            pct_reembolso = 0.25
+            score_delta = -10.0
+            penalidad = "CANCELACION_CLIENTE_MENOS_1H"
+        elif minutos_hasta_inicio <= 120:
+            pct_reembolso = 0.50
+            score_delta = -5.0
+            penalidad = "CANCELACION_CLIENTE_1H_2H"
+        else:
+            pct_reembolso = 0.75
+            score_delta = 0.0
+            penalidad = "CANCELACION_CLIENTE_MAS_2H"
+
+        monto_reembolso = round(precio_total * pct_reembolso, 2)
+
+    # ── Ejecutar reembolso Stripe ─────────────────────────────────────────
+    refund_id: Optional[str] = None
+    if monto_reembolso > 0 and stripe_pi:
+        from services.stripe import create_refund
+        amount_cents = int(monto_reembolso * 100)
+        refund_result = create_refund(stripe_pi, amount_cents)
+        refund_id = refund_result.get("id") if refund_result else None
+        logger.info(f"[CANCEL] Reembolso S/.{monto_reembolso:.2f} ejecutado: {refund_id}")
+    elif monto_reembolso > 0:
+        logger.info(f"[CANCEL] Reembolso manual pendiente S/.{monto_reembolso:.2f} svc={service_id}")
+
+    # ── Aplicar penalidad de score ────────────────────────────────────────
+    if score_delta != 0:
+        from services.penalties import apply_score_delta
+        apply_score_delta(
+            user_id=user.user_id,
+            delta=score_delta,
+            motivo=penalidad,
+            service_id=service_id,
+            db=db,
+        )
+
+    # ── Actualizar estado del servicio ───────────────────────────────────
+    db.table("service_requests").update(
+        {"estado": "CANCELADO", "motivo_cancelacion": body.motivo or penalidad}
+    ).eq("id", service_id).execute()
+
+    _log_event(db, service_id, "CANCELACION", user.user_id, {
+        "penalidad": penalidad,
+        "monto_reembolso": monto_reembolso,
+        "monto_retenido": round(precio_total - monto_reembolso, 2),
+        "motivo": body.motivo,
+        "refund_id": refund_id,
+    })
+
+    logger.info(
+        f"[CANCEL] svc={service_id} cliente={user.user_id} "
+        f"penalidad={penalidad} reembolso=S/.{monto_reembolso:.2f}"
+    )
+
+    return {
+        "estado": "CANCELADO",
+        "penalidad": penalidad,
+        "monto_reembolso": monto_reembolso,
+        "monto_retenido": round(precio_total - monto_reembolso, 2),
+        "refund_id": refund_id,
+        "mensaje": "Servicio cancelado correctamente.",
+    }
+
+
+# ── Finalización anticipada ───────────────────────────────────
+
+@router.post("/{service_id}/early-complete")
+async def early_complete_service(
+    service_id: str,
+    user: CurrentUser = Depends(get_current_user),
+):
+    """El cliente finaliza el servicio anticipadamente.
+
+    Solo disponible para servicios EN_CURSO.
+    El agente recibe el pago completo; no hay reembolso.
+    """
+    if user.tipo != "CLIENTE":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo clientes pueden finalizar servicios anticipadamente",
+        )
+
+    try:
+        db = get_supabase()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
+
+    svc_result = (
+        db.table("service_requests").select("*").eq("id", service_id).limit(1).execute()
+    )
+    if not svc_result.data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Servicio no encontrado")
+
+    service = svc_result.data[0]
+    if service["cliente_id"] != user.user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No autorizado")
+    if service["estado"] != "EN_CURSO":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Solo se puede finalizar anticipadamente un servicio en curso",
+        )
+
+    db.table("service_requests").update(
+        {
+            "estado": "COMPLETADO_ANTICIPADO",
+            "fecha_fin_real": datetime.now(timezone.utc).isoformat(),
+        }
+    ).eq("id", service_id).execute()
+
+    _log_event(db, service_id, "FINALIZACION_ANTICIPADA", user.user_id, {
+        "agente_id": service.get("agente_asignado_id"),
+        "precio_total": service.get("precio_total"),
+    })
+
+    logger.info(
+        f"[EARLY_COMPLETE] svc={service_id} cliente={user.user_id} "
+        f"agente={service.get('agente_asignado_id')} precio=S/.{service.get('precio_total')}"
+    )
+
+    return {
+        "estado": "COMPLETADO_ANTICIPADO",
+        "mensaje": "Servicio finalizado anticipadamente. El agente recibirá el pago completo.",
     }

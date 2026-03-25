@@ -7,6 +7,7 @@ import AgentProfileScreen from '../screens/client/AgentProfileScreen';
 import CreateServiceScreen from '../screens/client/CreateServiceScreen';
 import HomeScreen from '../screens/client/HomeScreen';
 import ReviewScreen from '../screens/client/ReviewScreen';
+import TermsViewScreen from '../screens/legal/TermsViewScreen';
 import type { ClientStackParamList } from '../types';
 
 const Stack = createNativeStackNavigator<ClientStackParamList>();
@@ -59,6 +60,11 @@ export default function ClientStack(): React.ReactElement {
         name="Review"
         component={ReviewScreen}
         options={{ title: 'Califica el servicio' }}
+      />
+      <Stack.Screen
+        name="TermsView"
+        component={TermsViewScreen}
+        options={{ title: 'Términos y Condiciones' }}
       />
     </Stack.Navigator>
   );

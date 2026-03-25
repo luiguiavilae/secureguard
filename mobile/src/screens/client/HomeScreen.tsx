@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   RefreshControl,
   SafeAreaView,
   ScrollView,
@@ -13,7 +14,7 @@ import {
   View,
 } from 'react-native';
 import { Button } from '../../components/common/Button';
-import { getMyActiveServices, getMyRecentServices } from '../../lib/api';
+import { cancelService, getMyActiveServices, getMyRecentServices } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 import type { ClientStackParamList, EstadoServicio, ServiceResponse } from '../../types';
 
@@ -26,6 +27,7 @@ const ESTADO_CONFIG: Record<EstadoServicio, { label: string; color: string }> = 
   CONFIRMADO_PAGADO: { label: 'Pago confirmado', color: '#0f3460' },
   EN_CURSO: { label: 'En curso', color: '#16a34a' },
   COMPLETADO: { label: 'Completado', color: '#6b7280' },
+  COMPLETADO_ANTICIPADO: { label: 'Finalizado antes', color: '#6b7280' },
   CANCELADO: { label: 'Cancelado', color: '#dc2626' },
 };
 
@@ -41,11 +43,16 @@ function formatMonto(monto: number): string {
 function ActiveServiceCard({
   service,
   onPress,
+  onCancel,
+  cancelLoading,
 }: {
   service: ServiceResponse;
   onPress: () => void;
+  onCancel: () => void;
+  cancelLoading: boolean;
 }) {
   const config = ESTADO_CONFIG[service.estado] ?? { label: service.estado, color: '#6b7280' };
+  const freeCancelable = service.estado === 'ABIERTO' || service.estado === 'EN_REVISION';
   return (
     <TouchableOpacity style={styles.activeCard} onPress={onPress} activeOpacity={0.85}>
       <View style={styles.activeCardHeader}>
@@ -74,6 +81,18 @@ function ActiveServiceCard({
         <Text style={styles.activeCardMonto}>{formatMonto(service.precio_total)}</Text>
       </View>
       <Text style={styles.verDetalles}>Ver detalles →</Text>
+      {freeCancelable && (
+        <TouchableOpacity
+          style={[styles.cancelBtnCard, cancelLoading && { opacity: 0.6 }]}
+          onPress={(e) => { e.stopPropagation?.(); onCancel(); }}
+          disabled={cancelLoading}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.cancelBtnCardText}>
+            {cancelLoading ? 'Cancelando...' : 'Cancelar solicitud'}
+          </Text>
+        </TouchableOpacity>
+      )}
     </TouchableOpacity>
   );
 }
@@ -125,6 +144,7 @@ export default function HomeScreen(): React.ReactElement {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cancelingId, setCancelingId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     if (!token) return;
@@ -155,6 +175,28 @@ export default function HomeScreen(): React.ReactElement {
 
   const handleActivePress = (service: ServiceResponse) => {
     navigation.navigate('ActiveService', { serviceId: service.id });
+  };
+
+  const handleCancelActive = (service: ServiceResponse) => {
+    Alert.alert(
+      'Cancelar solicitud',
+      '¿Seguro que quieres cancelar esta solicitud? No se ha realizado ningún pago, la cancelación es gratuita.',
+      [
+        { text: 'Volver', style: 'cancel' },
+        {
+          text: 'Sí, cancelar',
+          style: 'destructive',
+          onPress: async () => {
+            if (!token) return;
+            setCancelingId(service.id);
+            const { error: err } = await cancelService(service.id, '', token);
+            setCancelingId(null);
+            if (err) Alert.alert('Error', err);
+            else await loadData();
+          },
+        },
+      ],
+    );
   };
 
   const handleRecentPress = (service: ServiceResponse) => {
@@ -203,7 +245,13 @@ export default function HomeScreen(): React.ReactElement {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Servicio activo</Text>
             {activeServices.map((s) => (
-              <ActiveServiceCard key={s.id} service={s} onPress={() => handleActivePress(s)} />
+              <ActiveServiceCard
+                key={s.id}
+                service={s}
+                onPress={() => handleActivePress(s)}
+                onCancel={() => handleCancelActive(s)}
+                cancelLoading={cancelingId === s.id}
+              />
             ))}
           </View>
         )}
@@ -223,6 +271,14 @@ export default function HomeScreen(): React.ReactElement {
             <Text style={styles.ctaSubtext}>Respuesta en menos de 10 minutos</Text>
           )}
         </View>
+
+        {/* Términos */}
+        <TouchableOpacity
+          style={styles.termsLink}
+          onPress={() => navigation.navigate('TermsView')}
+        >
+          <Text style={styles.termsLinkText}>Términos y Condiciones</Text>
+        </TouchableOpacity>
 
         {/* Lista reciente */}
         <View style={styles.section}>
@@ -315,6 +371,18 @@ const styles = StyleSheet.create({
   activeCardDate: { color: '#9ca3af', fontSize: 13 },
   activeCardMonto: { color: '#ffffff', fontSize: 15, fontWeight: '700' },
   verDetalles: { color: '#60a5fa', fontSize: 13, fontWeight: '600', textAlign: 'right' },
+  cancelBtnCard: {
+    marginTop: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#dc2626',
+    alignItems: 'center',
+  },
+  cancelBtnCardText: { color: '#dc2626', fontSize: 13, fontWeight: '600' },
+
+  termsLink: { alignItems: 'center', paddingVertical: 12, paddingHorizontal: 20 },
+  termsLinkText: { color: '#6b7280', fontSize: 13, textDecorationLine: 'underline' },
 
   // CTA
   ctaContainer: { paddingHorizontal: 20, marginTop: 24, gap: 8 },

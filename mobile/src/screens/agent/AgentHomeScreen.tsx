@@ -203,6 +203,14 @@ export default function AgentHomeScreen(): React.ReactElement {
             variant="secondary"
           />
         </View>
+
+        {/* Términos */}
+        <TouchableOpacity
+          style={styles.termsLink}
+          onPress={() => navigation.navigate('TermsView')}
+        >
+          <Text style={styles.termsLinkText}>Términos y Condiciones</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -285,4 +293,6 @@ const styles = StyleSheet.create({
   statLabel: { fontSize: 12, color: '#6b7280', textAlign: 'center' },
 
   ratingsBtnContainer: { paddingHorizontal: 16, marginTop: 20 },
+  termsLink: { alignItems: 'center', paddingVertical: 12 },
+  termsLinkText: { color: '#6b7280', fontSize: 13, textDecorationLine: 'underline' },
 });

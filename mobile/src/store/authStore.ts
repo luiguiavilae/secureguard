@@ -9,6 +9,7 @@ interface AuthState {
   tipo: UserTipo | null;
   isNewUser: boolean;
   agentId: string | null;
+  termsAccepted: boolean;
   setAuth: (
     token: string,
     userId: string,
@@ -17,6 +18,7 @@ interface AuthState {
   ) => void;
   setTipo: (tipo: UserTipo) => void;
   setAgentId: (agentId: string) => void;
+  acceptTerms: () => void;
   /** Limpia el estado local. Para cerrar sesión completo usa logout(). */
   clearAuth: () => void;
   /** Cierra sesión: limpia token del SecureStore y resetea el store. */
@@ -40,6 +42,7 @@ export const useAuthStore = create<AuthState>()(
       tipo: null,
       isNewUser: false,
       agentId: null,
+      termsAccepted: false,
 
       setAuth: (token, userId, tipo, isNewUser) =>
         set({ token, userId, tipo, isNewUser }),
@@ -48,6 +51,8 @@ export const useAuthStore = create<AuthState>()(
 
       setAgentId: (agentId) => set({ agentId }),
 
+      acceptTerms: () => set({ termsAccepted: true }),
+
       clearAuth: () =>
         set({
           token: null,
@@ -55,6 +60,7 @@ export const useAuthStore = create<AuthState>()(
           tipo: null,
           isNewUser: false,
           agentId: null,
+          termsAccepted: false,
         }),
 
       logout: () => {
@@ -66,6 +72,7 @@ export const useAuthStore = create<AuthState>()(
           tipo: null,
           isNewUser: false,
           agentId: null,
+          termsAccepted: false,
         });
       },
     }),

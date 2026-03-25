@@ -1,3 +1,5 @@
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React from 'react';
 import {
   StyleSheet,
@@ -6,7 +8,9 @@ import {
   View,
 } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
-import { useAuthStore } from '../../store/authStore';
+import type { AuthStackParamList } from '../../types';
+
+type Nav = NativeStackNavigationProp<AuthStackParamList, 'RoleSelect'>;
 
 function PersonIcon(): React.ReactElement {
   return (
@@ -38,15 +42,14 @@ function AgentIcon(): React.ReactElement {
 }
 
 export default function RoleSelectScreen(): React.ReactElement {
-  const { setTipo } = useAuthStore();
+  const navigation = useNavigation<Nav>();
 
-  // Al cambiar tipo, RootNavigator en App.tsx re-renderiza y muestra el stack correcto
   function handleSelectClient(): void {
-    setTipo('CLIENTE');
+    navigation.navigate('Terms', { selectedTipo: 'CLIENTE' });
   }
 
   function handleSelectAgent(): void {
-    setTipo('AGENTE');
+    navigation.navigate('Terms', { selectedTipo: 'AGENTE' });
   }
 
   return (

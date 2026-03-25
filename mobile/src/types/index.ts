@@ -123,6 +123,7 @@ export type EstadoServicio =
   | 'CONFIRMADO_PAGADO'
   | 'EN_CURSO'
   | 'COMPLETADO'
+  | 'COMPLETADO_ANTICIPADO'
   | 'CANCELADO';
 
 export type Modalidad = 'fijo' | 'trayecto';
@@ -217,6 +218,21 @@ export interface AgentDayStats {
   solicitudes_abiertas: number;
 }
 
+// ── Cancel / EarlyComplete ────────────────────────────────────
+export interface CancelResponse {
+  estado: 'CANCELADO';
+  penalidad: string;
+  monto_reembolso: number;
+  monto_retenido: number;
+  refund_id: string | null;
+  mensaje: string;
+}
+
+export interface EarlyCompleteResponse {
+  estado: 'COMPLETADO_ANTICIPADO';
+  mensaje: string;
+}
+
 // ── SOS ───────────────────────────────────────────────────────
 export interface SosResponse {
   sos_id: string;
@@ -234,6 +250,7 @@ export type AuthStackParamList = {
   PhoneInput: undefined;
   OTP: { phone: string };
   RoleSelect: undefined;
+  Terms: { selectedTipo: 'CLIENTE' | 'AGENTE' };
 };
 
 export type OnboardingStackParamList = {
@@ -250,6 +267,7 @@ export type ClientStackParamList = {
   ActiveService: { serviceId: string };
   Chat: { serviceId: string; interlocutorNombre: string };
   Review: { serviceId: string; agentNombre: string };
+  TermsView: undefined;
 };
 
 export type AgentStackParamList = {
@@ -258,4 +276,5 @@ export type AgentStackParamList = {
   ActiveService: { serviceId: string };
   Chat: { serviceId: string; interlocutorNombre: string };
   Reviews: undefined;
+  TermsView: undefined;
 };

@@ -15,7 +15,7 @@ import {
   View,
 } from 'react-native';
 import { Button } from '../../components/common/Button';
-import { getServiceById, sendSos } from '../../lib/api';
+import { cancelService, earlyCompleteService, getServiceById, sendSos } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 import type { ClientStackParamList, EstadoServicio, ServiceResponse } from '../../types';
 
@@ -32,6 +32,7 @@ const ESTADO_UI: Record<
   CONFIRMADO_PAGADO: { emoji: '🔵', label: 'Pago confirmado — en espera de inicio', color: '#0f3460', bgColor: '#eff6ff' },
   EN_CURSO: { emoji: '🔵', label: 'Servicio en curso', color: '#16a34a', bgColor: '#dcfce7' },
   COMPLETADO: { emoji: '✅', label: 'Servicio completado', color: '#6b7280', bgColor: '#f3f4f6' },
+  COMPLETADO_ANTICIPADO: { emoji: '✅', label: 'Servicio finalizado anticipadamente', color: '#6b7280', bgColor: '#f3f4f6' },
   CANCELADO: { emoji: '❌', label: 'Servicio cancelado', color: '#dc2626', bgColor: '#fee2e2' },
 };
 
@@ -61,6 +62,8 @@ export default function ActiveServiceScreen(): React.ReactElement {
   const [service, setService] = useState<ServiceResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [sosLoading, setSosLoading] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [earlyCompleteLoading, setEarlyCompleteLoading] = useState(false);
   const [elapsed, setElapsed] = useState('00:00:00');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -117,6 +120,67 @@ export default function ActiveServiceScreen(): React.ReactElement {
     );
   };
 
+  const handleCancel = () => {
+    if (!service || !token) return;
+    const isPaid = service.estado === 'CONFIRMADO_PAGADO';
+    const penaltyMsg = isPaid
+      ? '\n\nTen en cuenta:\n• > 2h antes: reembolso del 75%\n• 1–2h antes: reembolso del 50%\n• < 1h antes: reembolso del 25%\n• En camino / iniciado: sin reembolso'
+      : '';
+    Alert.alert(
+      'Cancelar servicio',
+      `¿Seguro que quieres cancelar este servicio?${penaltyMsg}`,
+      [
+        { text: 'Volver', style: 'cancel' },
+        {
+          text: 'Sí, cancelar',
+          style: 'destructive',
+          onPress: async () => {
+            setCancelLoading(true);
+            const { data, error } = await cancelService(service.id, '', token);
+            setCancelLoading(false);
+            if (error) {
+              Alert.alert('Error', error);
+            } else if (data) {
+              const refundMsg = data.monto_reembolso > 0
+                ? `\nReembolso: S/ ${data.monto_reembolso.toFixed(2)}`
+                : '\nNo corresponde reembolso.';
+              Alert.alert('Servicio cancelado', `El servicio ha sido cancelado.${refundMsg}`, [
+                { text: 'OK', onPress: () => navigation.goBack() },
+              ]);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleEarlyComplete = () => {
+    if (!service || !token) return;
+    Alert.alert(
+      'Finalizar anticipadamente',
+      `¿Seguro que quieres terminar el servicio ahora?\n\nEl agente recibirá el pago completo (S/ ${service.precio_total.toFixed(2)}). No se generará reembolso.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Sí, finalizar',
+          style: 'destructive',
+          onPress: async () => {
+            setEarlyCompleteLoading(true);
+            const { data, error } = await earlyCompleteService(service.id, token);
+            setEarlyCompleteLoading(false);
+            if (error) {
+              Alert.alert('Error', error);
+            } else if (data) {
+              Alert.alert('Servicio finalizado', data.mensaje, [
+                { text: 'OK', onPress: () => navigation.goBack() },
+              ]);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const handleChat = () => {
     if (!service) return;
     const nombre = service.agente?.nombre ?? 'Agente';
@@ -147,7 +211,8 @@ export default function ActiveServiceScreen(): React.ReactElement {
 
   const estadoUI = ESTADO_UI[service.estado] ?? ESTADO_UI.ABIERTO;
   const enCurso = service.estado === 'EN_CURSO';
-  const completado = service.estado === 'COMPLETADO';
+  const completado = service.estado === 'COMPLETADO' || service.estado === 'COMPLETADO_ANTICIPADO';
+  const cancelable = service.estado === 'ABIERTO' || service.estado === 'EN_REVISION' || service.estado === 'CONFIRMADO_PAGADO';
   const agentNombre = service.agente?.nombre ?? null;
 
   return (
@@ -216,6 +281,26 @@ export default function ActiveServiceScreen(): React.ReactElement {
           )}
           {completado && (
             <Button title="Calificar servicio" onPress={handleReview} />
+          )}
+          {enCurso && (
+            <Button
+              title={earlyCompleteLoading ? 'Finalizando...' : 'Finalizar ahora'}
+              onPress={handleEarlyComplete}
+              variant="secondary"
+              disabled={earlyCompleteLoading}
+            />
+          )}
+          {cancelable && (
+            <TouchableOpacity
+              style={[styles.cancelBtn, cancelLoading && { opacity: 0.6 }]}
+              onPress={handleCancel}
+              disabled={cancelLoading}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.cancelBtnText}>
+                {cancelLoading ? 'Cancelando...' : 'Cancelar servicio'}
+              </Text>
+            </TouchableOpacity>
           )}
         </View>
       </ScrollView>
@@ -304,6 +389,15 @@ const styles = StyleSheet.create({
   detailValue: { fontSize: 14, color: '#1f2937', fontWeight: '500', flex: 1, textAlign: 'right' },
 
   actions: { paddingHorizontal: 16, marginTop: 16, gap: 12 },
+
+  cancelBtn: {
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#dc2626',
+    alignItems: 'center',
+  },
+  cancelBtnText: { color: '#dc2626', fontSize: 15, fontWeight: '600' },
 
   sosBtn: {
     position: 'absolute',

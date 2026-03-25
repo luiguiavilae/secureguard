@@ -6,8 +6,10 @@ import type {
   AgentProfileResponse,
   AgentRegisterResponse,
   ApiResult,
+  CancelResponse,
   ChatMessage,
   DocumentUploadResponse,
+  EarlyCompleteResponse,
   ReviewRequest,
   ReviewResponse,
   SendOtpResponse,
@@ -329,6 +331,33 @@ export function completeService(
       method: 'POST',
       body: JSON.stringify({ reporte }),
     },
+    token,
+  );
+}
+
+// ── Cancelación / Finalización anticipada ─────────────────────
+export function cancelService(
+  serviceId: string,
+  motivo: string,
+  token: string,
+): Promise<ApiResult<CancelResponse>> {
+  return apiFetch<CancelResponse>(
+    `/services/${serviceId}/cancel`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ motivo }),
+    },
+    token,
+  );
+}
+
+export function earlyCompleteService(
+  serviceId: string,
+  token: string,
+): Promise<ApiResult<EarlyCompleteResponse>> {
+  return apiFetch<EarlyCompleteResponse>(
+    `/services/${serviceId}/early-complete`,
+    { method: 'POST' },
     token,
   );
 }
