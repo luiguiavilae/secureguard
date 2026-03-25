@@ -125,12 +125,44 @@ class CreateServiceRequest(BaseModel):
     duracion_horas: int
     fecha_inicio_solicitada: str  # ISO datetime string
 
+    @field_validator("descripcion")
+    @classmethod
+    def validate_descripcion(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("La descripción no puede estar vacía")
+        if len(v) > 1000:
+            raise ValueError("La descripción no puede exceder 1000 caracteres")
+        return v
+
+    @field_validator("distrito")
+    @classmethod
+    def validate_distrito(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("El distrito no puede estar vacío")
+        if len(v) > 100:
+            raise ValueError("El nombre del distrito no puede exceder 100 caracteres")
+        return v
+
+    @field_validator("tipo_servicio")
+    @classmethod
+    def validate_tipo_servicio(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("El tipo de servicio no puede estar vacío")
+        if len(v) > 100:
+            raise ValueError("El tipo de servicio no puede exceder 100 caracteres")
+        return v
+
     @field_validator("duracion_horas")
     @classmethod
     def validate_duracion(cls, v: int) -> int:
         minimo = SYSTEM_CONFIG["minimo_horas"]
         if v < minimo:
             raise ValueError(f"La duración mínima es de {minimo} horas")
+        if v > 24:
+            raise ValueError("La duración máxima es de 24 horas")
         return v
 
     @field_validator("agentes_requeridos")
@@ -138,6 +170,8 @@ class CreateServiceRequest(BaseModel):
     def validate_agentes(cls, v: int) -> int:
         if v < 1:
             raise ValueError("Se requiere al menos 1 agente")
+        if v > 20:
+            raise ValueError("No se pueden solicitar más de 20 agentes por servicio")
         return v
 
 
@@ -167,6 +201,14 @@ class SOSRequest(BaseModel):
         v = v.upper()
         if v not in ("CLIENTE", "AGENTE"):
             raise ValueError("El tipo debe ser CLIENTE o AGENTE")
+        return v
+
+    @field_validator("descripcion")
+    @classmethod
+    def validate_descripcion(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) > 500:
+            raise ValueError("La descripción SOS no puede exceder 500 caracteres")
         return v
 
 
@@ -297,7 +339,12 @@ async def get_service(
     service_id: str,
     user: CurrentUser = Depends(get_current_user),
 ):
-    """Retorna el detalle de una solicitud de servicio."""
+    """Retorna el detalle de una solicitud de servicio.
+
+    Solo accesible para:
+    - El cliente dueño del servicio.
+    - El agente asignado o que haya aplicado al servicio.
+    """
     try:
         db = get_supabase()
     except RuntimeError as exc:
@@ -308,7 +355,47 @@ async def get_service(
     )
     if not result.data:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Servicio no encontrado")
-    return result.data[0]
+
+    service = result.data[0]
+
+    # ── Verificar acceso ───────────────────────────────────────
+    is_client = service["cliente_id"] == user.user_id
+    is_assigned_agent = service.get("agente_asignado_id") == user.user_id
+
+    if not is_client and not is_assigned_agent:
+        if user.tipo == "AGENTE":
+            # Verificar que el agente haya aplicado a este servicio
+            applied = (
+                db.table("service_agents")
+                .select("id")
+                .eq("service_id", service_id)
+                .eq("agente_id", user.user_id)
+                .limit(1)
+                .execute()
+            )
+            if not applied.data:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="No tienes acceso a este servicio",
+                )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tienes acceso a este servicio",
+            )
+
+    # ── Proteger datos sensibles del cliente para agentes pre-pago ────
+    # La dirección/descripción exacta solo se revela cuando el pago está confirmado.
+    # TODO: cuando se agregue el campo `direccion_exacta` al schema, filtrarlo aquí.
+    _ESTADOS_POST_PAGO = {"CONFIRMADO_PAGADO", "EN_CURSO", "COMPLETADO"}
+    if user.tipo == "AGENTE" and service.get("estado") not in _ESTADOS_POST_PAGO:
+        service = {
+            **service,
+            # Ocultar descripción completa hasta que el pago esté confirmado
+            "descripcion": "[Disponible después del pago]",
+        }
+
+    return service
 
 
 @router.post("/{service_id}/select-agent")

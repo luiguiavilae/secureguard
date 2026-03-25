@@ -2,6 +2,9 @@ import logging
 import random
 import re
 import string
+import threading
+import time
+from collections import defaultdict, deque
 from datetime import datetime, timedelta, timezone
 from typing import Literal
 
@@ -17,6 +20,37 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 _PHONE_RE = re.compile(r"^9\d{8}$")
+
+# ── Rate limit para verify-otp (en memoria; suficiente para instancia única) ──
+_verify_lock = threading.Lock()
+_verify_store: dict[str, deque] = defaultdict(deque)
+_MAX_VERIFY_ATTEMPTS = 10   # intentos por número por hora
+_VERIFY_WINDOW = 3600       # 1 hora en segundos
+
+
+def _mask_phone(phone: str) -> str:
+    """Enmascara teléfono para logs: 912345678 → 9***678"""
+    if len(phone) >= 4:
+        return phone[:1] + "***" + phone[-3:]
+    return "***"
+
+
+def _check_verify_rate_limit(phone: str) -> None:
+    now = time.time()
+    window_start = now - _VERIFY_WINDOW
+    with _verify_lock:
+        ts = _verify_store[phone]
+        while ts and ts[0] < window_start:
+            ts.popleft()
+        if len(ts) >= _MAX_VERIFY_ATTEMPTS:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=(
+                    "Demasiados intentos de verificación. "
+                    "Solicita un código nuevo o espera una hora."
+                ),
+            )
+        ts.append(now)
 
 
 # ── Helpers de validación ────────────────────────────────────
@@ -120,7 +154,7 @@ async def send_otp(body: SendOTPRequest):
     Rate limit: máximo 3 solicitudes por número por hora.
     """
     phone = body.phone
-    logger.info(f"Solicitud OTP para teléfono {phone}")
+    logger.info(f"Solicitud OTP para teléfono {_mask_phone(phone)}")
 
     try:
         db = get_supabase()
@@ -137,7 +171,7 @@ async def send_otp(body: SendOTPRequest):
         .execute()
     )
     if (attempts_result.count or 0) >= settings.effective_otp_rate_limit:
-        logger.warning(f"Rate limit OTP alcanzado para {phone}")
+        logger.warning(f"Rate limit OTP alcanzado para {_mask_phone(phone)}")
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=(
@@ -150,7 +184,7 @@ async def send_otp(body: SendOTPRequest):
     # ── 2. Generar y guardar OTP ───────────────────────────
     otp_code = _generate_otp()
     if settings.is_mock_supabase:
-        logger.info(f"🔐 [MOCK] OTP para {phone}: {otp_code}")
+        logger.info(f"🔐 [MOCK] OTP para {_mask_phone(phone)}: {otp_code}")
     expires_at = (
         datetime.now(timezone.utc) + timedelta(minutes=settings.otp_expire_minutes)
     ).isoformat()
@@ -175,13 +209,13 @@ async def send_otp(body: SendOTPRequest):
     )
     sms_ok = send_sms(phone, msg_text)
     if not sms_ok:
-        logger.error(f"Fallo al enviar SMS a {phone}")
+        logger.error(f"Fallo al enviar SMS a {_mask_phone(phone)}")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="No se pudo enviar el SMS. Intenta nuevamente en unos segundos.",
         )
 
-    logger.info(f"OTP generado y enviado a {phone}")
+    logger.info(f"OTP generado y enviado a {_mask_phone(phone)}")
     return SendOTPResponse(
         message="OTP enviado correctamente",
         expires_in=settings.otp_expire_minutes * 60,
@@ -198,7 +232,8 @@ async def verify_otp(body: VerifyOTPRequest):
     Verifica el OTP. Si es válido, crea o recupera el usuario y emite un JWT de 30 días.
     """
     phone = body.phone
-    logger.info(f"Verificación OTP para {phone} | tipo: {body.tipo}")
+    _check_verify_rate_limit(phone)
+    logger.info(f"Verificación OTP para {_mask_phone(phone)} | tipo: {body.tipo}")
 
     try:
         db = get_supabase()
@@ -248,10 +283,10 @@ async def verify_otp(body: VerifyOTPRequest):
     if is_new_user:
         created = db.table("users").insert({"phone": phone, "tipo": body.tipo}).execute()
         user = created.data[0]
-        logger.info(f"Usuario nuevo creado: {user['id']} | tipo: {body.tipo}")
+        logger.info(f"Usuario nuevo creado: {user['id']} | tipo: {body.tipo} | tel: {_mask_phone(phone)}")
     else:
         user = user_result.data[0]
-        logger.info(f"Usuario existente recuperado: {user['id']}")
+        logger.info(f"Usuario existente recuperado: {user['id']} | tel: {_mask_phone(phone)}")
 
     # ── 5. Emitir JWT ──────────────────────────────────────
     token = _create_jwt(

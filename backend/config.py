@@ -1,4 +1,4 @@
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -90,6 +90,28 @@ class Settings(BaseSettings):
     @classmethod
     def clean_credentials(cls, v: str) -> str:
         return _ascii_clean(v)
+
+    @model_validator(mode="after")
+    def validate_production_secrets(self) -> "Settings":
+        """Falla al iniciar si los secretos por defecto se usan en producción."""
+        if self.backend_env != "production":
+            return self
+        _INSECURE_DEFAULTS = {
+            "backend_secret_key": "dev-secret-change-in-production-min-32-chars!!",
+            "admin_secret_key": "dev-admin-key",
+        }
+        for field, default in _INSECURE_DEFAULTS.items():
+            if getattr(self, field) == default:
+                raise ValueError(
+                    f"{field.upper()} no puede ser el valor por defecto en producción. "
+                    f"Genera una key segura con: openssl rand -hex 32"
+                )
+        if not self.stripe_webhook_secret and not self.is_mock_supabase:
+            raise ValueError(
+                "STRIPE_WEBHOOK_SECRET es requerido en producción. "
+                "Configúralo en el dashboard de Stripe."
+            )
+        return self
 
     model_config = SettingsConfigDict(
         env_file=".env",

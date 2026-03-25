@@ -148,7 +148,14 @@ async def stripe_webhook(request: Request):
 
     webhook_secret = settings.stripe_webhook_secret
     if not webhook_secret:
-        return {"received": True}
+        # En producción, rechazar si no hay webhook secret configurado.
+        # Aceptar sin validar sería una vulnerabilidad crítica (cualquiera podría
+        # simular un pago exitoso).
+        logger.error("Stripe webhook recibido pero STRIPE_WEBHOOK_SECRET no está configurado")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Webhook no configurado correctamente",
+        )
 
     try:
         import stripe as stripe_lib
@@ -176,6 +183,10 @@ async def stripe_webhook(request: Request):
         )
         if pay_result.data:
             payment = pay_result.data[0]
+            # Idempotencia: solo procesar si aún está PENDIENTE
+            if payment["estado"] == "PAGADO":
+                logger.info(f"Webhook duplicado ignorado para PI {pi_id} (ya procesado)")
+                return {"received": True}
             db.table("payments").update({"estado": "PAGADO"}).eq("id", payment["id"]).execute()
             db.table("service_requests").update(
                 {"estado": "CONFIRMADO_PAGADO"}

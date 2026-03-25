@@ -16,6 +16,14 @@ router = APIRouter()
 
 _REQUIRED_DOC_TIPOS = {"DNI_FRENTE", "DNI_REVERSO", "SUCAMEC", "SELFIE"}
 _TIME_RE = re.compile(r"^\d{2}:\d{2}$")
+_MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+_ALLOWED_MIME_TYPES = {
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/webp",
+    "application/pdf",
+}
 
 
 # ── Modelos ──────────────────────────────────────────────────
@@ -214,11 +222,28 @@ async def upload_document(
             detail="El archivo está vacío",
         )
 
+    # Validar tamaño
+    if len(file_bytes) > _MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"El archivo no puede exceder {_MAX_FILE_SIZE // (1024 * 1024)} MB",
+        )
+
+    # Validar tipo MIME (solo imágenes y PDF)
+    content_type = file.content_type or "application/octet-stream"
+    if content_type not in _ALLOWED_MIME_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "Tipo de archivo no permitido. "
+                "Solo se aceptan imágenes (JPG, PNG, WEBP) y PDF."
+            ),
+        )
+
     # Construir ruta en Storage: {agent_id}/{TIPO}.{ext}
     original_name = file.filename or "archivo"
     ext = original_name.rsplit(".", 1)[-1].lower() if "." in original_name else "jpg"
     storage_path = f"{agent_id}/{tipo}.{ext}"
-    content_type = file.content_type or "application/octet-stream"
 
     # Subir a Supabase Storage (upsert=true para reemplazar si ya existe)
     try:
@@ -406,6 +431,17 @@ async def get_agent_profile(
     )
     badges = [b["badge"] for b in (badges_result.data or [])]
 
+    # Solo el propio agente puede ver las URLs de sus documentos sensibles (DNI, SUCAMEC).
+    # Otros usuarios solo ven tipo y estado, sin URL.
+    is_own_profile = profile["user_id"] == current_user.user_id
+    if is_own_profile:
+        documentos = docs_result.data or []
+    else:
+        documentos = [
+            {"tipo": d["tipo"], "estado": d["estado"]}
+            for d in (docs_result.data or [])
+        ]
+
     return AgentProfileResponse(
         agent_id=profile["id"],
         user_id=profile["user_id"],
@@ -422,7 +458,7 @@ async def get_agent_profile(
         rating_avg=float(profile.get("rating_avg") or 0.0),
         rating_count=int(profile.get("rating_count") or 0),
         completed_services=int(profile.get("completed_services") or 0),
-        documentos=docs_result.data or [],
+        documentos=documentos,
         badges=badges,
     )
 
