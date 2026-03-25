@@ -3,6 +3,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   RefreshControl,
   SafeAreaView,
   ScrollView,
@@ -106,6 +107,18 @@ function RecentServiceRow({
 export default function HomeScreen(): React.ReactElement {
   const navigation = useNavigation<Nav>();
   const token = useAuthStore((s) => s.token);
+  const logout = useAuthStore((s) => s.logout);
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Cerrar sesión',
+      '¿Estás seguro de que quieres cerrar sesión?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Cerrar sesión', style: 'destructive', onPress: logout },
+      ],
+    );
+  };
 
   const [activeServices, setActiveServices] = useState<ServiceResponse[]>([]);
   const [recentServices, setRecentServices] = useState<ServiceResponse[]>([]);
@@ -173,6 +186,9 @@ export default function HomeScreen(): React.ReactElement {
             </View>
             <Text style={styles.headerTitle}>SecureGuard</Text>
           </View>
+          <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn} hitSlop={8}>
+            <Text style={styles.logoutText}>Salir</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Error */}
@@ -247,6 +263,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1a2e',
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  logoutBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: '#4b5563' },
+  logoutText: { color: '#9ca3af', fontSize: 13, fontWeight: '600' },
   shieldIcon: {
     width: 36,
     height: 36,

@@ -1,11 +1,11 @@
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Path, Polygon } from 'react-native-svg';
-import type { AuthStackParamList } from '../../types';
 
-type Nav = NativeStackNavigationProp<AuthStackParamList, 'Splash'>;
+/**
+ * Pantalla de splash — componente visual puro.
+ * La lógica de ruteo (token válido / expirado / nuevo usuario) vive en App.tsx.
+ */
 
 function ShieldIcon(): React.ReactElement {
   return (
@@ -29,15 +29,6 @@ function ShieldIcon(): React.ReactElement {
 }
 
 export default function SplashScreen(): React.ReactElement {
-  const navigation = useNavigation<Nav>();
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      navigation.replace('PhoneInput');
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [navigation]);
-
   return (
     <View style={styles.container}>
       <ShieldIcon />

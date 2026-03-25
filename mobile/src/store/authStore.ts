@@ -17,7 +17,10 @@ interface AuthState {
   ) => void;
   setTipo: (tipo: UserTipo) => void;
   setAgentId: (agentId: string) => void;
+  /** Limpia el estado local. Para cerrar sesión completo usa logout(). */
   clearAuth: () => void;
+  /** Cierra sesión: limpia token del SecureStore y resetea el store. */
+  logout: () => void;
 }
 
 const secureStorage = createJSONStorage(() => ({
@@ -53,6 +56,18 @@ export const useAuthStore = create<AuthState>()(
           isNewUser: false,
           agentId: null,
         }),
+
+      logout: () => {
+        // Resetear el store en memoria — Zustand persist borrará SecureStore automáticamente.
+        // RootNavigator reacciona al token: null y muestra AuthStack.
+        set({
+          token: null,
+          userId: null,
+          tipo: null,
+          isNewUser: false,
+          agentId: null,
+        });
+      },
     }),
     {
       name: 'secureguard-auth',

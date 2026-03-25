@@ -231,7 +231,6 @@ export interface ApiResult<T> {
 
 // ── Navigation param lists ────────────────────────────────────
 export type AuthStackParamList = {
-  Splash: undefined;
   PhoneInput: undefined;
   OTP: { phone: string };
   RoleSelect: undefined;

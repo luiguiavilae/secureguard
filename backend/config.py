@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     allowed_origins: str = "http://localhost:3000,http://localhost:19006"
 
     # ── JWT ───────────────────────────────────────────────────
-    jwt_expire_days: int = 30
+    jwt_expire_days: int = 365  # 1 año — el usuario no debería perder sesión
 
     # ── OTP ───────────────────────────────────────────────────
     otp_expire_minutes: int = 10

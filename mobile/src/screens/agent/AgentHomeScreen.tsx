@@ -3,6 +3,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   RefreshControl,
   SafeAreaView,
   ScrollView,
@@ -33,6 +34,18 @@ export default function AgentHomeScreen(): React.ReactElement {
   const navigation = useNavigation<Nav>();
   const token = useAuthStore((s) => s.token);
   const agentId = useAuthStore((s) => s.agentId);
+  const logout = useAuthStore((s) => s.logout);
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Cerrar sesión',
+      '¿Estás seguro de que quieres cerrar sesión?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Cerrar sesión', style: 'destructive', onPress: logout },
+      ],
+    );
+  };
 
   const [profile, setProfile] = useState<AgentProfileResponse | null>(null);
   const [activeService, setActiveService] = useState<ServiceResponse | null>(null);
@@ -96,9 +109,9 @@ export default function AgentHomeScreen(): React.ReactElement {
             <Text style={styles.headerGreeting}>Hola,</Text>
             <Text style={styles.headerName}>{nombre} 👋</Text>
           </View>
-          <View style={styles.headerShield}>
-            <Text style={styles.headerShieldText}>🛡</Text>
-          </View>
+          <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn} hitSlop={8}>
+            <Text style={styles.logoutText}>Salir</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Toggle disponibilidad */}
@@ -211,15 +224,8 @@ const styles = StyleSheet.create({
   },
   headerGreeting: { color: '#9ca3af', fontSize: 14 },
   headerName: { color: '#ffffff', fontSize: 22, fontWeight: '700' },
-  headerShield: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#0f3460',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerShieldText: { fontSize: 22 },
+  logoutBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: '#4b5563' },
+  logoutText: { color: '#9ca3af', fontSize: 13, fontWeight: '600' },
 
   availCard: {
     flexDirection: 'row',
