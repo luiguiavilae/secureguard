@@ -117,7 +117,7 @@ export interface AgentListItem {
 
 // ── Servicios ─────────────────────────────────────────────────
 export type EstadoServicio =
-  | 'ABIERTO'
+  | 'ABIERTA'
   | 'EN_REVISION'
   | 'CONFIRMADO'
   | 'CONFIRMADO_PAGADO'

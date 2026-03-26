@@ -35,7 +35,7 @@ export default function TermsViewScreen(): React.ReactElement {
         </Section>
 
         <Section title="3. Política de cancelaciones y reembolsos">
-          <Text style={styles.bold}>Cancelación gratuita:</Text>{' '}Estados ABIERTO o EN_REVISION (sin pago realizado).{'\n\n'}
+          <Text style={styles.bold}>Cancelación gratuita:</Text>{' '}Mientras la solicitud aún esté buscando agente o en revisión (sin pago realizado).{'\n\n'}
           <Text style={styles.bold}>Cancelación con penalidad (CONFIRMADO_PAGADO):{'\n'}</Text>
           {'  '}• &gt; 2h antes: reembolso 75 %{'\n'}
           {'  '}• 1–2h antes: reembolso 50 %{'\n'}
@@ -45,37 +45,33 @@ export default function TermsViewScreen(): React.ReactElement {
           El agente recibe el pago íntegro. Sin reembolso al cliente.
         </Section>
 
-        <Section title="4. Comisión de plataforma">
-          Salvus retiene el 20 % del precio total como comisión. El Agente recibe el 80 % restante.
-        </Section>
-
-        <Section title="5. Responsabilidad limitada">
+        <Section title="4. Responsabilidad limitada">
           Salvus actúa como intermediario tecnológico y no garantiza resultados ni asume responsabilidad
           por actos de los Agentes. El Agente es responsable de sus certificaciones SUCAMEC vigentes.
         </Section>
 
-        <Section title="6. Privacidad — Ley 29733">
+        <Section title="5. Privacidad — Ley N.° 29733">
           En cumplimiento de la Ley N.° 29733 (Perú), tus datos son usados únicamente para prestar el
           servicio. No se ceden a terceros sin consentimiento. El teléfono nunca se comparte con la
           contraparte. Ejerce derechos ARCO en privacidad@salvus.pe.
         </Section>
 
-        <Section title="7. Prohibición de contacto directo">
+        <Section title="6. Prohibición de contacto directo">
           Queda prohibido el intercambio de datos de contacto personales fuera de la plataforma para
           contratar servicios al margen de Salvus. El incumplimiento puede resultar en bloqueo de cuenta.
         </Section>
 
-        <Section title="8. Sistema de puntuación y sanciones">
+        <Section title="7. Sistema de puntuación y sanciones">
           Cancelaciones tardías y conducta inapropiada reducen el score, pudiendo generar restricciones
           o bloqueo. Cancelaciones del Agente a &lt; 2h del inicio conllevan suspensión de 7 días.
         </Section>
 
-        <Section title="9. Resolución de disputas">
+        <Section title="8. Resolución de disputas">
           Mediación interna primero (soporte@salvus.pe). De no resolverse: Juzgados del Cercado de Lima,
           Perú.
         </Section>
 
-        <Section title="10. Modificaciones">
+        <Section title="9. Modificaciones">
           Salvus puede modificar estos Términos con 7 días de aviso previo en la aplicación.
         </Section>
       </ScrollView>

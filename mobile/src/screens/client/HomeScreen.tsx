@@ -4,7 +4,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Linking,
   RefreshControl,
   SafeAreaView,
   ScrollView,
@@ -21,7 +20,7 @@ import type { ClientStackParamList, EstadoServicio, ServiceResponse } from '../.
 type Nav = NativeStackNavigationProp<ClientStackParamList, 'Home'>;
 
 const ESTADO_CONFIG: Record<EstadoServicio, { label: string; color: string }> = {
-  ABIERTO: { label: 'Abierto', color: '#d97706' },
+  ABIERTA: { label: 'Abierto', color: '#d97706' },
   EN_REVISION: { label: 'En revisión', color: '#d97706' },
   CONFIRMADO: { label: 'Confirmado', color: '#0f3460' },
   CONFIRMADO_PAGADO: { label: 'Pago confirmado', color: '#0f3460' },
@@ -52,7 +51,7 @@ function ActiveServiceCard({
   cancelLoading: boolean;
 }) {
   const config = ESTADO_CONFIG[service.estado] ?? { label: service.estado, color: '#6b7280' };
-  const freeCancelable = service.estado === 'ABIERTO' || service.estado === 'EN_REVISION';
+  const freeCancelable = service.estado === 'ABIERTA' || service.estado === 'EN_REVISION';
   return (
     <TouchableOpacity style={styles.activeCard} onPress={onPress} activeOpacity={0.85}>
       <View style={styles.activeCardHeader}>
@@ -180,9 +179,9 @@ export default function HomeScreen(): React.ReactElement {
   const handleCancelActive = (service: ServiceResponse) => {
     Alert.alert(
       'Cancelar solicitud',
-      '¿Seguro que quieres cancelar esta solicitud? No se ha realizado ningún pago, la cancelación es gratuita.',
+      '¿Cancelar esta solicitud?\n\nNo hay penalidad — la cancelación es gratuita.',
       [
-        { text: 'Volver', style: 'cancel' },
+        { text: 'No, mantener', style: 'cancel' },
         {
           text: 'Sí, cancelar',
           style: 'destructive',
@@ -191,7 +190,7 @@ export default function HomeScreen(): React.ReactElement {
             setCancelingId(service.id);
             const { error: err } = await cancelService(service.id, '', token);
             setCancelingId(null);
-            if (err) Alert.alert('Error', err);
+            if (err) Alert.alert('Error al cancelar', err);
             else await loadData();
           },
         },

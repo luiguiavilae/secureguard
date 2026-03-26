@@ -82,12 +82,7 @@ export default function TermsScreen(): React.ReactElement {
           sujeto a los tiempos de cada entidad financiera.
         </Section>
 
-        <Section title="4. Comisión de plataforma">
-          Salvus retiene el 20 % del precio total del servicio como comisión por intermediación.
-          El 80 % restante corresponde al Agente. El precio que el Cliente paga ya incluye esta comisión.
-        </Section>
-
-        <Section title="5. Responsabilidad limitada">
+        <Section title="4. Responsabilidad limitada">
           Salvus facilita la conexión entre Clientes y Agentes, pero NO garantiza resultados específicos
           ni asume responsabilidad por actos u omisiones de los Agentes durante la prestación del servicio.{'\n\n'}
           La plataforma no es responsable por:{'\n'}
@@ -97,7 +92,7 @@ export default function TermsScreen(): React.ReactElement {
           El Agente es responsable de contar con los permisos y certificaciones SUCAMEC vigentes.
         </Section>
 
-        <Section title="6. Privacidad de datos — Ley 29733">
+        <Section title="5. Privacidad de datos — Ley N.° 29733">
           En cumplimiento de la Ley N.° 29733, Ley de Protección de Datos Personales del Perú, y su
           Reglamento (DS 003-2013-JUS), el usuario autoriza a Salvus a recopilar, tratar y utilizar sus
           datos personales (nombre, teléfono, ubicación referencial, historial de servicios) con la
@@ -109,13 +104,13 @@ export default function TermsScreen(): React.ReactElement {
           La comunicación se realiza exclusivamente a través del chat interno de la plataforma.
         </Section>
 
-        <Section title="7. Prohibición de contacto directo">
+        <Section title="6. Prohibición de contacto directo">
           Queda prohibido que Clientes y Agentes intercambien datos de contacto personales
           (teléfono, correo, redes sociales) fuera de la plataforma con el fin de contratar servicios
           al margen de Salvus. El incumplimiento podrá resultar en la suspensión o bloqueo de la cuenta.
         </Section>
 
-        <Section title="8. Sistema de puntuación y sanciones">
+        <Section title="7. Sistema de puntuación y sanciones">
           La plataforma opera un sistema de score para Clientes y Agentes. Las cancelaciones tardías,
           el incumplimiento de compromisos y la conducta inapropiada descuentan puntos del score,
           pudiendo resultar en restricciones de uso o bloqueo permanente de la cuenta.{'\n\n'}
@@ -123,14 +118,14 @@ export default function TermsScreen(): React.ReactElement {
           automática de 7 días.
         </Section>
 
-        <Section title="9. Resolución de disputas">
+        <Section title="8. Resolución de disputas">
           Ante cualquier controversia derivada del uso de la plataforma, las partes se someten
           primero a la mediación interna de Salvus (soporte@salvus.pe).{'\n\n'}
           De no resolverse, la controversia se someterá a los Juzgados y Tribunales del Cercado de Lima,
           Perú, renunciando a cualquier otro fuero que pudiera corresponderles.
         </Section>
 
-        <Section title="10. Modificaciones">
+        <Section title="9. Modificaciones">
           Salvus se reserva el derecho de modificar estos Términos en cualquier momento.
           Los cambios serán notificados mediante la aplicación con al menos 7 días de anticipación.
           El uso continuado de la plataforma tras la notificación implica la aceptación de los

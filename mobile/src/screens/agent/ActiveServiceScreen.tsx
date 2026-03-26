@@ -24,12 +24,13 @@ type Props = NativeStackScreenProps<AgentStackParamList, 'ActiveService'>;
 type Nav = NativeStackNavigationProp<AgentStackParamList, 'ActiveService'>;
 
 const ESTADO_LABELS: Record<EstadoServicio, { label: string; color: string }> = {
-  ABIERTO: { label: 'Abierto', color: '#d97706' },
+  ABIERTA: { label: 'Abierto', color: '#d97706' },
   EN_REVISION: { label: 'En revisión', color: '#d97706' },
   CONFIRMADO: { label: 'Confirmado', color: '#0f3460' },
   CONFIRMADO_PAGADO: { label: 'Pago confirmado', color: '#16a34a' },
   EN_CURSO: { label: 'En curso', color: '#16a34a' },
   COMPLETADO: { label: 'Completado', color: '#6b7280' },
+  COMPLETADO_ANTICIPADO: { label: 'Finalizado antes', color: '#6b7280' },
   CANCELADO: { label: 'Cancelado', color: '#dc2626' },
 };
 

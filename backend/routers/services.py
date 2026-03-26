@@ -1002,29 +1002,43 @@ async def cancel_service(
     # ── Ejecutar reembolso Stripe ─────────────────────────────────────────
     refund_id: Optional[str] = None
     if monto_reembolso > 0 and stripe_pi:
-        from services.stripe import create_refund
-        amount_cents = int(monto_reembolso * 100)
-        refund_result = create_refund(stripe_pi, amount_cents)
-        refund_id = refund_result.get("id") if refund_result else None
-        logger.info(f"[CANCEL] Reembolso S/.{monto_reembolso:.2f} ejecutado: {refund_id}")
+        try:
+            from services.stripe import create_refund
+            amount_cents = int(monto_reembolso * 100)
+            refund_result = create_refund(stripe_pi, amount_cents)
+            refund_id = refund_result.get("id") if refund_result else None
+            logger.info(f"[CANCEL] Reembolso S/.{monto_reembolso:.2f} ejecutado: {refund_id}")
+        except Exception as exc:
+            logger.error(f"[CANCEL] Error al procesar reembolso Stripe svc={service_id}: {exc}")
+            # El reembolso fallido queda pendiente para revisión manual, pero no bloqueamos la cancelación
     elif monto_reembolso > 0:
         logger.info(f"[CANCEL] Reembolso manual pendiente S/.{monto_reembolso:.2f} svc={service_id}")
 
-    # ── Aplicar penalidad de score ────────────────────────────────────────
+    # ── Aplicar penalidad de score (no crítico — no bloquea la cancelación) ──
     if score_delta != 0:
-        from services.penalties import apply_score_delta
-        apply_score_delta(
-            user_id=user.user_id,
-            delta=score_delta,
-            motivo=penalidad,
-            service_id=service_id,
-            db=db,
-        )
+        try:
+            from services.penalties import apply_score_delta
+            apply_score_delta(
+                user_id=user.user_id,
+                delta=score_delta,
+                motivo=penalidad,
+                service_id=service_id,
+                db=db,
+            )
+        except Exception as exc:
+            logger.warning(f"[CANCEL] Error al aplicar score delta svc={service_id}: {exc}")
 
     # ── Actualizar estado del servicio ───────────────────────────────────
-    db.table("service_requests").update(
-        {"estado": "CANCELADO", "motivo_cancelacion": body.motivo or penalidad}
-    ).eq("id", service_id).execute()
+    try:
+        db.table("service_requests").update(
+            {"estado": "CANCELADO", "motivo_cancelacion": body.motivo or penalidad}
+        ).eq("id", service_id).execute()
+    except Exception as exc:
+        logger.error(f"[CANCEL] Error al actualizar estado svc={service_id}: {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al cancelar el servicio. Intenta nuevamente.",
+        )
 
     _log_event(db, service_id, "CANCELACION", user.user_id, {
         "penalidad": penalidad,

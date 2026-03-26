@@ -26,7 +26,7 @@ const ESTADO_UI: Record<
   EstadoServicio,
   { emoji: string; label: string; color: string; bgColor: string }
 > = {
-  ABIERTO: { emoji: '🟡', label: 'Solicitud abierta', color: '#d97706', bgColor: '#fef3c7' },
+  ABIERTA: { emoji: '🟡', label: 'Solicitud abierta', color: '#d97706', bgColor: '#fef3c7' },
   EN_REVISION: { emoji: '🟡', label: 'Esperando confirmación del agente', color: '#d97706', bgColor: '#fef3c7' },
   CONFIRMADO: { emoji: '🟢', label: 'Agente confirmado — pendiente de pago', color: '#0f3460', bgColor: '#eff6ff' },
   CONFIRMADO_PAGADO: { emoji: '🔵', label: 'Pago confirmado — en espera de inicio', color: '#0f3460', bgColor: '#eff6ff' },
@@ -209,10 +209,10 @@ export default function ActiveServiceScreen(): React.ReactElement {
     );
   }
 
-  const estadoUI = ESTADO_UI[service.estado] ?? ESTADO_UI.ABIERTO;
+  const estadoUI = ESTADO_UI[service.estado] ?? ESTADO_UI.ABIERTA;
   const enCurso = service.estado === 'EN_CURSO';
   const completado = service.estado === 'COMPLETADO' || service.estado === 'COMPLETADO_ANTICIPADO';
-  const cancelable = service.estado === 'ABIERTO' || service.estado === 'EN_REVISION' || service.estado === 'CONFIRMADO_PAGADO';
+  const cancelable = service.estado === 'ABIERTA' || service.estado === 'EN_REVISION' || service.estado === 'CONFIRMADO_PAGADO';
   const agentNombre = service.agente?.nombre ?? null;
 
   return (
